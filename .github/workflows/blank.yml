@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parole Support Letter Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        #paroleLetterForm, #letterOutput, #letterPreview {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 20px auto;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #letterContent, #previewContent {
+            white-space: pre-wrap;
+        }
+
+        @media (max-width: 400px) {
+            #paroleLetterForm, #letterOutput, #letterPreview {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<form id="paroleLetterForm">
+    <h2>Parole Support Letter Generator</h2>
+
+    <label for="writerName">Your Name:</label>
+    <input type="text" id="writerName" required>
+
+    <label for="relationship">Your Relationship to the Person:</label>
+    <input type="text" id="relationship" required>
+
+    <label for="personName">Name of Person Seeking Parole:</label>
+    <input type="text" id="personName" required>
+
+    <label for="yearsKnown">Years Known:</label>
+    <input type="number" id="yearsKnown" required>
+
+    <label for="supportDetails">How You Will Support Their Reintegration:</label>
+    <textarea id="supportDetails" required></textarea>
+
+    <button type="button" onclick="previewLetter()">Preview Letter</button>
+    <button type="button" onclick="generateLetter()">Generate Final Letter</button>
+</form>
+
+<div id="letterPreview" style="display:none;">
+    <h3>Letter Preview:</h3>
+    <pre id="previewContent"></pre>
+</div>
+
+<div id="letterOutput" style="display:none;">
+    <h3>Generated Letter:</h3>
+    <pre id="letterContent"></pre>
+    <button onclick="generateLetter()">Generate Another Letter</button>
+</div>
+
+<script>
+const letterTemplates = [
+    `Dear Parole Board,
+
+I'm writing to back up {personName}'s parole application. I've known {personName} as {relationship} for {yearsKnown} years, and I've seen firsthand how much they've changed for the better.
+
+{personName}'s got a solid plan for when they get out. I know about their reentry plans, and I'm ready to help however I can. I'll support them by {supportDetails}. With this kind of backup, I reckon {personName}'s got a real shot at being a good member of our community.
+
+Thanks for hearing me out.
+
+Cheers,
+{writerName}`,
+
+    `To the Parole Board,
+
+I'm writing this letter to support {personName}'s parole. I've known them for {yearsKnown} years as their {relationship}, and I can tell you, they're not the same person who went in.
+
+{personName}'s got a proper plan for when they get out. I'm familiar with their reentry plans and I'm committed to helping them succeed. I'm gonna do my part by {supportDetails}. With this plan and support, I believe {personName}'s ready to be a stand-up member of society.
+
+Thanks for taking the time to read this.
+
+All the best,
+{writerName}`,
+
+    `Hey there Parole Board,
+
+I'm writing about {personName}, who I've known as {relationship} for {yearsKnown} years. I'm telling you, {personName}'s changed a ton since going inside.
+
+{personName}'s got a solid plan for when they get out. I know what they're planning to do, and I'm all in to help them make it work. I'm gonna help by {supportDetails}. With this kind of backup, I reckon {personName}'s got a real chance of making good.
+
+Thanks for considering this.
+
+Take care,
+{writerName}`
+];
+
+function fillTemplate(template) {
+    const writerName = document.getElementById('writerName').value;
+    const relationship = document.getElementById('relationship').value;
+    const personName = document.getElementById('personName').value;
+    const yearsKnown = document.getElementById('yearsKnown').value;
+    const supportDetails = document.getElementById('supportDetails').value;
+
+    return template
+        .replace(/{personName}/g, personName)
+        .replace(/{relationship}/g, relationship)
+        .replace(/{yearsKnown}/g, yearsKnown)
+        .replace(/{supportDetails}/g, supportDetails)
+        .replace(/{writerName}/g, writerName);
+}
+
+function previewLetter() {
+    const randomTemplate = letterTemplates[Math.floor(Math.random() * letterTemplates.length)];
+    const letter = fillTemplate(randomTemplate);
+    document.getElementById('previewContent').textContent = letter;
+    document.getElementById('letterPreview').style.display = 'block';
+    document.getElementById('letterOutput').style.display = 'none';
+}
+
+function generateLetter() {
+    const randomTemplate = letterTemplates[Math.floor(Math.random() * letterTemplates.length)];
+    const letter = fillTemplate(randomTemplate);
+    document.getElementById('letterContent').textContent = letter;
+    document.getElementById('letterOutput').style.display = 'block';
+    document.getElementById('letterPreview').style.display = 'none';
+}
+</script>
+
+</body>
+</html>
