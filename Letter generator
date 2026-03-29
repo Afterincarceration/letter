@@ -1,0 +1,461 @@
+import { useState, useRef, useEffect } from "react";
+
+const AGENCIES = [
+  { id:"ftc", group:"Federal", name:"Federal Trade Commission", div:"Consumer Protection Bureau", addr:"600 Pennsylvania Ave NW, Washington DC 20580", phone:"1-877-382-4357", portal:"https://reportfraud.ftc.gov", portalLabel:"ReportFraud.ftc.gov", cats:["consumer"] },
+  { id:"cfpb", group:"Federal", name:"Consumer Financial Protection Bureau", div:null, addr:"1700 G Street NW, Washington DC 20552", phone:"1-855-411-2372", portal:"https://www.consumerfinance.gov/complaint/", portalLabel:"consumerfinance.gov/complaint", cats:["consumer","credit"] },
+  { id:"usps", group:"Federal", name:"U.S. Postal Inspection Service", div:"Mail Fraud Division", addr:"222 S Riverside Plaza Suite 1250, Chicago IL 60606", portal:"https://postalinspectors.uspis.gov/", portalLabel:"postalinspectors.uspis.gov", cats:["consumer"] },
+  { id:"doj_cr", group:"Federal", name:"U.S. Dept. of Justice", div:"Civil Rights Division — Special Litigation", addr:"950 Pennsylvania Ave NW, Washington DC 20530", email:"speciallit@usdoj.gov", portal:"https://civilrights.justice.gov/", portalLabel:"civilrights.justice.gov", cats:["brutality","advocacy"] },
+  { id:"doj_oig", group:"Federal", name:"DOJ Office of Inspector General", div:"Federal Prison Complaints Hotline", addr:"950 Pennsylvania Ave NW Suite 4706, Washington DC 20530", phone:"1-800-869-4499", portal:"https://oig.justice.gov/hotline", portalLabel:"oig.justice.gov/hotline", cats:["brutality"] },
+  { id:"fbi", group:"Federal", name:"Federal Bureau of Investigation", div:"Civil Rights Unit", addr:"935 Pennsylvania Ave NW, Washington DC 20535", portal:"https://tips.fbi.gov", portalLabel:"tips.fbi.gov", cats:["brutality"] },
+  { id:"uspc", group:"Federal", name:"U.S. Parole Commission", div:null, addr:"90 K Street NE Third Floor, Washington DC 20530", phone:"202-346-7000", cats:["release"] },
+  { id:"doj_foia", group:"Federal", name:"U.S. Dept. of Justice", div:"Office of Information Policy (FOIA)", addr:"441 G Street NW Suite 6050, Washington DC 20530", email:"DOJ.FOIA@usdoj.gov", portal:"https://efois.usdoj.gov/", portalLabel:"efois.usdoj.gov", cats:["documentation"] },
+  { id:"schumer", group:"Federal Elected", name:"Sen. Chuck Schumer (NY)", div:null, addr:"322 Hart Senate Office Building, Washington DC 20510", portal:"https://www.schumer.senate.gov/contact/email-chuck", portalLabel:"schumer.senate.gov/contact", cats:["advocacy"] },
+  { id:"gillibrand", group:"Federal Elected", name:"Sen. Kirsten Gillibrand (NY)", div:null, addr:"478 Russell Senate Office Building, Washington DC 20510", portal:"https://www.gillibrand.senate.gov/contact/", portalLabel:"gillibrand.senate.gov/contact", cats:["advocacy"] },
+  { id:"ny_ag_c", group:"New York State", name:"NYS Attorney General", div:"Bureau of Consumer Frauds & Protection", addr:"28 Liberty Street, New York NY 10005", phone:"1-800-771-7755", portal:"https://ag.ny.gov/consumer-frauds-and-protection-bureau", portalLabel:"ag.ny.gov", cats:["consumer","credit"] },
+  { id:"ny_dfs", group:"New York State", name:"NY Dept. of Financial Services", div:"Consumer Assistance Unit", addr:"One State Street, New York NY 10004", phone:"1-800-342-3736", portal:"https://www.dfs.ny.gov/complaint", portalLabel:"dfs.ny.gov/complaint", cats:["consumer","credit"] },
+  { id:"nyc_dca", group:"New York State", name:"NYC Dept. of Consumer & Worker Protection", div:null, addr:"42 Broadway, New York NY 10004", phone:"311", portal:"https://www.nyc.gov/site/dca/consumers/file-complaint.page", portalLabel:"nyc.gov/dca", note:"NYC residents only", cats:["consumer"] },
+  { id:"doccs_ig", group:"New York State", name:"DOCCS Inspector General", div:"Staff Misconduct Unit", addr:"1220 Washington Avenue Building 2, Albany NY 12226", phone:"518-457-3840", cats:["brutality"] },
+  { id:"ny_scoc", group:"New York State", name:"NYS Commission of Correction", div:null, addr:"80 South Swan Street 12th Floor, Albany NY 12210", email:"nyscocinfo@scoc.ny.gov", phone:"518-485-2346", portal:"https://scoc.ny.gov/complaints.html", portalLabel:"scoc.ny.gov/complaints", cats:["brutality"] },
+  { id:"ny_ag_cr", group:"New York State", name:"NYS Attorney General", div:"Civil Rights Bureau", addr:"28 Liberty Street, New York NY 10005", phone:"1-800-771-7755", portal:"https://ag.ny.gov/civil-rights", portalLabel:"ag.ny.gov/civil-rights", cats:["brutality","advocacy"] },
+  { id:"ccrb", group:"New York State", name:"NYC Civilian Complaint Review Board", div:null, addr:"100 Church Street 10th Floor, New York NY 10007", phone:"1-800-341-2272", portal:"https://www.nyc.gov/site/ccrb/complaints/file-a-complaint.page", portalLabel:"nyc.gov/ccrb", note:"NYPD complaints only", cats:["brutality"] },
+  { id:"ny_parole", group:"New York State", name:"NYS Board of Parole", div:null, addr:"1220 Washington Avenue, Albany NY 12226", phone:"518-473-9400", cats:["release"] },
+  { id:"ny_coog", group:"New York State", name:"NYS Committee on Open Government", div:"FOIL Guidance & Assistance", addr:"99 Washington Avenue Suite 650, Albany NY 12231", email:"infocoog@dos.ny.gov", phone:"518-474-2518", portal:"https://dos.ny.gov/committee-open-government", portalLabel:"dos.ny.gov", cats:["documentation"] },
+  { id:"ny_gov", group:"New York State", name:"Governor Kathy Hochul", div:null, addr:"NYS State Capitol Building, Albany NY 12224", portal:"https://www.governor.ny.gov/content/governor-contact-form", portalLabel:"governor.ny.gov/contact", cats:["advocacy"] },
+  { id:"equifax", group:"Credit Bureaus", name:"Equifax", div:"Dispute Center", addr:"P.O. Box 7404256, Atlanta GA 30374", phone:"1-866-349-5191", portal:"https://www.equifax.com/personal/credit-report-services/credit-dispute/", portalLabel:"equifax.com/dispute", cats:["credit"] },
+  { id:"transunion", group:"Credit Bureaus", name:"TransUnion", div:"Consumer Disputes", addr:"P.O. Box 2000, Chester PA 19016", phone:"1-800-916-8800", portal:"https://www.transunion.com/credit-disputes/dispute-your-credit", portalLabel:"transunion.com/dispute", cats:["credit"] },
+  { id:"experian", group:"Credit Bureaus", name:"Experian", div:"Consumer Disputes", addr:"P.O. Box 4500, Allen TX 75013", phone:"1-888-397-3742", portal:"https://www.experian.com/disputes/main.html", portalLabel:"experian.com/disputes", cats:["credit"] },
+];
+
+const OPTS = {
+  relationship:["Parent","Sibling","Child","Spouse or partner","Extended family member","Close friend","Neighbor","Employer","Educator","Community leader","Religious leader","Legal advocate","Fellow community member","Other"],
+  years_known:["Less than 1 year","1–3 years","3–5 years","5–10 years","More than 10 years"],
+  facility_type:["NY State prison (DOCCS)","Federal prison (BOP)","NY county jail","NYC Department of Correction","Local police precinct or holding","Immigration detention","Other"],
+  incident_types:["Physical assault","Verbal threats or abuse","Denial of medical care","Excessive solitary confinement","Sexual misconduct or assault","Retaliation for filing a grievance","Denial of food, water, or hygiene","Racial or ethnic discrimination","Religious discrimination","Denial of legal access","Excessive use of restraints","Other"],
+  grievance:["Yes — grievance has been filed","No — not yet","No — fear of retaliation","Unknown"],
+  industry:["Banking or financial services","Retail or e-commerce","Utilities","Insurance","Auto or transportation","Housing or real estate","Healthcare","Telecommunications","Debt collection","Other"],
+  fraud_types:["False advertising","Unauthorized charges","Failure to deliver goods or services","Deceptive pricing or hidden fees","Bait and switch","Data breach or identity theft","Warranty violation","Abusive debt collection","Subscription trap","Other"],
+  record_types:["Incident reports","Personnel or staff records","Medical or mental health records","Video or audio footage","Grievance and complaint records","Classification or assessment records","Disciplinary records","Use of force reports","Visitation records","Transfer records","Other"],
+  prior_request:["First request","Prior request was ignored","Prior request was denied","Prior request was only partially fulfilled"],
+  dispute_types:["Account is not mine","Incorrect balance or amount","Wrong payment status","Account is too old to appear (7+ years)","Duplicate account entry","Related to identity theft","Debt was paid or settled","Account closed but shown as open","Wrong personal information","Other"],
+  issue_area:["Criminal legal system reform","Parole and reentry","Prison and jail conditions","Police accountability","Consumer rights","Housing rights","Healthcare access","Immigration","Education","Environmental justice","Voting rights","Other"],
+};
+
+const arr = v => Array.isArray(v) ? v.join(", ") : (v||"");
+
+const TYPES = [
+  { id:"release", label:"Support Someone's Release", icon:"🔓", desc:"Parole boards, judges, facility officials", cats:["release"],
+    fields:[
+      {id:"person_name",label:"Full name of the person incarcerated",type:"text",ph:"Full legal name"},
+      {id:"facility",label:"Facility name and location",type:"text",ph:"e.g. Sing Sing Correctional, Ossining NY"},
+      {id:"relationship",label:"Your relationship to them",type:"sel",opts:"relationship"},
+      {id:"years_known",label:"How long have you known them?",type:"sel",opts:"years_known"},
+      {id:"situation",label:"Describe the situation in your own words",type:"area",ph:"Why should this person be released? What would they return to? What have you witnessed about who they are?"},
+    ],
+    prompt:(f,r)=>`Draft a formal letter of support for the release of an incarcerated person. Formally structured, persuasive to institutional authority, reflecting the person's dignity, naming systemic factors where relevant. Do not be sentimental in ways that undermine credibility. Be direct and specific.\n\nAddressed to: ${r}\nPerson: ${f.person_name} | Facility: ${f.facility}\nWriter: ${f.relationship}, known ${f.years_known}\nSituation: ${f.situation}\n\nWrite a complete formal letter: [DATE] placeholder, salutation, 3-4 paragraphs, close "Respectfully," blank signature line.`
+  },
+  { id:"brutality", label:"Report Guard Brutality", icon:"⚖️", desc:"Inspector General, Civil Rights offices, oversight bodies", cats:["brutality"],
+    fields:[
+      {id:"incident_date",label:"Date of incident",type:"text",ph:"e.g. March 15, 2026 — approximate is fine"},
+      {id:"facility_type",label:"Type of facility",type:"sel",opts:"facility_type"},
+      {id:"facility",label:"Facility name and location",type:"text",ph:"e.g. Rikers Island, East Elmhurst NY"},
+      {id:"incident_types",label:"Types of misconduct",type:"multi",opts:"incident_types"},
+      {id:"person_affected",label:"Who was affected?",type:"text",ph:"Name, 'myself', or 'a person in custody' to protect identity"},
+      {id:"grievance_filed",label:"Has a formal grievance been filed?",type:"sel",opts:"grievance"},
+      {id:"situation",label:"Describe what happened in your own words",type:"area",ph:"What occurred, in what order, who witnessed it, what was the outcome..."},
+    ],
+    prompt:(f,r)=>`Draft a formal complaint documenting alleged correctional staff misconduct. Factual, precise, meets the standard of a formal institutional complaint. Name the harm clearly, invoke the legal obligations of the facility, demand investigation and accountability. Let the facts carry the argument.\n\nAddressed to: ${r}\nDate: ${f.incident_date} | Facility: ${f.facility} (${f.facility_type})\nTypes: ${arr(f.incident_types)} | Affected: ${f.person_affected} | Grievance: ${f.grievance_filed}\nAccount: ${f.situation}\n\nComplete formal complaint: [DATE] placeholder, salutation, 4-5 paragraphs (incident summary, specific harm, failure of duty, demand for action, record-keeping notice). End "Respectfully submitted," blank line. Add: "CC: [writer should add oversight bodies]"`
+  },
+  { id:"consumer", label:"Report Consumer Fraud", icon:"🏦", desc:"FTC, CFPB, NY Attorney General, DFS", cats:["consumer"],
+    fields:[
+      {id:"company_name",label:"Company or business name",type:"text",ph:"Full legal name"},
+      {id:"industry",label:"Industry or sector",type:"sel",opts:"industry"},
+      {id:"fraud_types",label:"Types of fraud or harm",type:"multi",opts:"fraud_types"},
+      {id:"transaction_date",label:"Date of transaction or incident",type:"text",ph:"e.g. February 14, 2026"},
+      {id:"amount",label:"Amount of money involved",type:"text",ph:"e.g. $340 — or 'no money exchanged'"},
+      {id:"situation",label:"Describe what happened in your own words",type:"area",ph:"What did the company do or fail to do? What did you lose?"},
+    ],
+    prompt:(f,r)=>`Draft a formal consumer fraud complaint. Describe the deceptive or unlawful practice, identify the harm, reference applicable consumer protection statutes, demand specific remedy. Firm. Factual. No hedging.\n\nAddressed to: ${r}\nCompany: ${f.company_name} (${f.industry}) | Fraud: ${arr(f.fraud_types)}\nDate: ${f.transaction_date} | Amount: ${f.amount}\nDescription: ${f.situation}\n\nComplete formal complaint: [DATE] placeholder, salutation, 3-4 paragraphs, demand for remedy, close "Respectfully," blank line. Include: "I am retaining a copy of this correspondence and reserve the right to escalate to relevant regulatory authorities."`
+  },
+  { id:"documentation", label:"Request Documentation", icon:"📋", desc:"FOIL and FOIA requests for records from any agency", cats:["documentation"],
+    fields:[
+      {id:"agency_name",label:"Agency holding the records",type:"text",ph:"e.g. DOCCS, NYPD, ACS, Social Services"},
+      {id:"record_types",label:"Types of records requested",type:"multi",opts:"record_types"},
+      {id:"date_range",label:"Date range for records",type:"text",ph:"e.g. January 2024 to present"},
+      {id:"prior_request",label:"Prior request history",type:"sel",opts:"prior_request"},
+      {id:"situation",label:"Any additional context",type:"area",ph:"Purpose, case numbers, names involved, urgency..."},
+    ],
+    prompt:(f,r)=>`Draft a formal records request under FOIL (NY) or FOIA (federal). Clearly identify records sought, invoke statutory right of access, request fee waiver, set response deadline, state intent to appeal if denied.\n\nAddressed to: ${r}\nAgency: ${f.agency_name} | Records: ${arr(f.record_types)}\nDate range: ${f.date_range} | Prior request: ${f.prior_request}\nContext: ${f.situation}\n\nComplete formal request: [DATE] placeholder, salutation, itemized record list, statutory basis, fee waiver, 5-business-day acknowledgment deadline (NY FOIL). End "Respectfully," blank line.`
+  },
+  { id:"credit", label:"Dispute a Credit Report", icon:"📊", desc:"Credit bureaus, CFPB, NY DFS under the FCRA", cats:["credit"],
+    fields:[
+      {id:"account_info",label:"Account or item being disputed",type:"text",ph:"Account number, creditor name, or description"},
+      {id:"dispute_types",label:"Basis for dispute",type:"multi",opts:"dispute_types"},
+      {id:"situation",label:"Describe the situation in your own words",type:"area",ph:"What does the report say, and what is the actual truth?"},
+    ],
+    prompt:(f,r)=>`Draft a formal credit dispute letter under the Fair Credit Reporting Act (FCRA). Identify the disputed item, state basis for dispute, cite FCRA rights including 30-day investigation requirement, demand removal or correction. Reference right to sue if bureau fails to act.\n\nAddressed to: ${r}\nDisputed item: ${f.account_info} | Basis: ${arr(f.dispute_types)}\nContext: ${f.situation}\n\nComplete formal dispute letter: [DATE] placeholder, salutation, 3-4 paragraphs, demand, 30-day notice, close "Respectfully," blank line. Include: "Enclosures: [add supporting documents as appropriate]"`
+  },
+  { id:"advocacy", label:"General Advocacy Letter", icon:"✊", desc:"Elected officials, agencies, institutions", cats:["advocacy"],
+    fields:[
+      {id:"issue_area",label:"Issue area",type:"sel",opts:"issue_area"},
+      {id:"specific_policy",label:"Specific law, policy, or decision",type:"text",ph:"e.g. Fair and Timely Parole Act, Elder Parole Bill"},
+      {id:"affected_community",label:"Who is affected and how?",type:"text",ph:"Describe the community and the impact"},
+      {id:"ask",label:"What specific action are you asking for?",type:"text",ph:"e.g. vote yes on Bill X, fund program Y, investigate practice Z"},
+      {id:"situation",label:"Describe the issue in your own words",type:"area",ph:"What is wrong and why it matters — say it plainly"},
+    ],
+    prompt:(f,r)=>`Draft a formal advocacy letter to institutional authority. Ground it in the specific policy, speak on behalf of affected community with dignity, make a clear specific ask, use language that commands respect. Do not moralize. Organize facts and stakes into an argument a policymaker cannot easily dismiss.\n\nAddressed to: ${r}\nIssue: ${f.issue_area} — ${f.specific_policy}\nAffected community: ${f.affected_community} | Ask: ${f.ask}\nContext: ${f.situation}\n\nComplete formal advocacy letter: [DATE] placeholder, salutation, 4 paragraphs (context and stakes / community impact / specific demand with rationale / call to action). End "Respectfully," blank line.`
+  },
+];
+
+// ─── COMPONENTS ─────────────────────────────────────────────────────
+
+const C = {
+  bg:"#0d0b08", surface:"#16120c", hover:"#1e1810",
+  border:"#2a2218", gold:"#c8902a", goldHi:"#e0a030",
+  text:"#e8e0d0", muted:"#9a8a72", faint:"#4a3e2e",
+  paper:"#faf7f0", paperText:"#1a1510",
+};
+
+function MultiSelect({ optKey, value=[], onChange }) {
+  const opts = OPTS[optKey];
+  const [open, setOpen] = useState(false);
+  const ref = useRef();
+  useEffect(()=>{
+    const h = e => { if(ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown",h);
+    return ()=>document.removeEventListener("mousedown",h);
+  },[]);
+  const toggle = o => onChange(value.includes(o)?value.filter(v=>v!==o):[...value,o]);
+  const allOn = value.length===opts.length;
+  const label = value.length===0?"Select all that apply":value.length===1?value[0]:`${value.length} selected`;
+  return (
+    <div ref={ref} style={{position:"relative"}}>
+      <button onClick={()=>setOpen(!open)} style={{
+        width:"100%",background:C.surface,border:`1px solid ${open?C.gold:C.border}`,
+        borderRadius:2,color:value.length?C.text:C.faint,fontFamily:"'Source Serif 4',serif",
+        fontSize:15,padding:"11px 13px",textAlign:"left",cursor:"pointer",
+        display:"flex",justifyContent:"space-between",alignItems:"center"
+      }}>
+        <span style={{fontStyle:value.length?"normal":"italic"}}>{label}</span>
+        <span style={{color:C.muted,fontSize:10,display:"inline-block",transform:open?"scaleY(-1)":"none"}}>▾</span>
+      </button>
+      {open&&(
+        <div style={{
+          position:"absolute",top:"100%",left:0,right:0,zIndex:100,
+          background:C.surface,border:`1px solid ${C.border}`,borderTop:"none",
+          borderRadius:"0 0 2px 2px",maxHeight:260,overflowY:"auto"
+        }}>
+          <label style={{display:"flex",alignItems:"center",gap:10,padding:"9px 13px",
+            borderBottom:`1px solid ${C.border}`,cursor:"pointer",background:allOn?C.hover:"transparent"}}>
+            <input type="checkbox" checked={allOn} onChange={()=>onChange(allOn?[]:[...opts])} style={{accentColor:C.gold}}/>
+            <span style={{fontFamily:"'Source Serif 4',serif",fontSize:13,color:C.muted,fontStyle:"italic"}}>Select all</span>
+          </label>
+          {opts.map(o=>(
+            <label key={o} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 13px",
+              cursor:"pointer",background:value.includes(o)?C.hover:"transparent",transition:"background .1s"}}>
+              <input type="checkbox" checked={value.includes(o)} onChange={()=>toggle(o)} style={{accentColor:C.gold}}/>
+              <span style={{fontFamily:"'Source Serif 4',serif",fontSize:14,color:C.text}}>{o}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Sel({ optKey, value, onChange }) {
+  const opts = OPTS[optKey];
+  return (
+    <select value={value||""} onChange={e=>onChange(e.target.value)} style={{
+      width:"100%",background:C.surface,border:`1px solid ${C.border}`,borderRadius:2,
+      color:value?C.text:C.faint,fontFamily:"'Source Serif 4',serif",fontSize:15,
+      padding:"11px 13px",cursor:"pointer",outline:"none",appearance:"none",
+      backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239a8a72'/%3E%3C/svg%3E")`,
+      backgroundRepeat:"no-repeat",backgroundPosition:"right 13px center"
+    }}>
+      <option value="" disabled>Select one</option>
+      {opts.map(o=><option key={o} value={o}>{o}</option>)}
+    </select>
+  );
+}
+
+function RecipientPicker({ cats, selected, onChange }) {
+  const relevant = AGENCIES.filter(a=>a.cats.some(c=>cats.includes(c)));
+  const groups = [...new Set(relevant.map(a=>a.group))];
+  const [exp, setExp] = useState(()=>groups.reduce((acc,g)=>({...acc,[g]:true}),{}));
+  const toggle = id => onChange(selected.includes(id)?selected.filter(x=>x!==id):[...selected,id]);
+  return (
+    <div>
+      {groups.map(g=>{
+        const agencies = relevant.filter(a=>a.group===g);
+        const sel = agencies.filter(a=>selected.includes(a.id)).length;
+        const isOpen = exp[g];
+        return (
+          <div key={g} style={{marginBottom:10,border:`1px solid ${C.border}`,borderRadius:2}}>
+            <button onClick={()=>setExp(e=>({...e,[g]:!isOpen}))} style={{
+              width:"100%",background:isOpen?C.hover:C.surface,border:"none",
+              padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"
+            }}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:C.text}}>{g}</span>
+                {sel>0&&<span style={{background:C.gold,color:C.bg,fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:10,fontFamily:"'Source Serif 4',serif"}}>{sel}</span>}
+              </div>
+              <span style={{color:C.muted,fontSize:10,display:"inline-block",transform:isOpen?"scaleY(-1)":"none"}}>▾</span>
+            </button>
+            {isOpen&&(
+              <div style={{borderTop:`1px solid ${C.border}`}}>
+                {agencies.map(a=>(
+                  <label key={a.id} style={{
+                    display:"flex",alignItems:"flex-start",gap:12,padding:"12px 16px",
+                    cursor:"pointer",borderBottom:`1px solid ${C.border}`,
+                    background:selected.includes(a.id)?"#1a1610":"transparent",transition:"background .1s"
+                  }}>
+                    <input type="checkbox" checked={selected.includes(a.id)} onChange={()=>toggle(a.id)}
+                      style={{accentColor:C.gold,marginTop:3,flexShrink:0}}/>
+                    <div>
+                      <div style={{fontFamily:"'Source Serif 4',serif",fontSize:14,color:C.text,lineHeight:1.3}}>
+                        {a.name}{a.div&&<span style={{color:C.muted}}> — {a.div}</span>}
+                      </div>
+                      <div style={{fontFamily:"'Source Serif 4',serif",fontSize:12,color:C.faint,marginTop:3,lineHeight:1.4}}>
+                        {a.addr}
+                        {a.note&&<span style={{color:C.gold}}> · {a.note}</span>}
+                      </div>
+                      {a.portal&&<div style={{fontFamily:"'Source Serif 4',serif",fontSize:12,color:"#6090c0",marginTop:2}}>Online: {a.portalLabel}</div>}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function AgencyCard({ agency, letter }) {
+  const [addrCopied, setAddrCopied] = useState(false);
+  const subject = "Formal Complaint — After Incarceration Member";
+  const addrBlock = [agency.name, agency.div, agency.addr].filter(Boolean).join("\n");
+  const copyAddr = ()=>{
+    navigator.clipboard.writeText(addrBlock);
+    setAddrCopied(true); setTimeout(()=>setAddrCopied(false),2000);
+  };
+  const mailto = agency.email
+    ? `mailto:${agency.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(letter)}`
+    : null;
+  return (
+    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:2,padding:"16px 20px",marginBottom:10}}>
+      <div style={{marginBottom:10}}>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:C.text,lineHeight:1.3}}>
+          {agency.name}
+        </div>
+        {agency.div&&<div style={{fontFamily:"'Source Serif 4',serif",fontSize:13,color:C.muted,marginTop:2}}>{agency.div}</div>}
+        {agency.note&&<div style={{fontFamily:"'Source Serif 4',serif",fontSize:12,color:C.gold,marginTop:2}}>⚠ {agency.note}</div>}
+        <div style={{fontFamily:"'Source Serif 4',serif",fontSize:12,color:C.faint,marginTop:6,lineHeight:1.5}}>
+          {agency.addr}{agency.phone&&<span> · {agency.phone}</span>}
+        </div>
+      </div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        {agency.portal&&(
+          <a href={agency.portal} target="_blank" rel="noopener noreferrer" style={{
+            background:"#1a2a3a",color:"#60a0d0",border:"1px solid #2a4060",
+            borderRadius:2,padding:"7px 14px",fontSize:12,textDecoration:"none",
+            fontFamily:"'Source Serif 4',serif",letterSpacing:".06em",display:"inline-block"
+          }}>File Online ↗</a>
+        )}
+        {mailto&&(
+          <a href={mailto} style={{
+            background:"#1a2a1a",color:"#80c060",border:"1px solid #3a5a2a",
+            borderRadius:2,padding:"7px 14px",fontSize:12,textDecoration:"none",
+            fontFamily:"'Source Serif 4',serif",letterSpacing:".06em",display:"inline-block"
+          }}>Send by Email</a>
+        )}
+        <button onClick={copyAddr} style={{
+          background:"transparent",color:addrCopied?"#80c060":C.muted,
+          border:`1px solid ${C.border}`,borderRadius:2,padding:"7px 14px",
+          fontSize:12,cursor:"pointer",fontFamily:"'Source Serif 4',serif",letterSpacing:".06em"
+        }}>{addrCopied?"Address Copied ✓":"Copy Mailing Address"}</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── MAIN ────────────────────────────────────────────────────────────
+
+export default function App() {
+  const [typeId, setTypeId] = useState(null);
+  const [fields, setFields] = useState({});
+  const [recips, setRecips] = useState([]);
+  const [letter, setLetter] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
+
+  const type = TYPES.find(t=>t.id===typeId);
+  const setF = (id,v) => setFields(p=>({...p,[id]:v}));
+
+  const ready = type && type.fields.every(f=>{
+    const v = fields[f.id];
+    return Array.isArray(v)?v.length>0:(v||"").trim();
+  }) && recips.length>0 && !loading;
+
+  const recipNames = recips.map(id=>{
+    const a = AGENCIES.find(x=>x.id===id);
+    return a?(a.div?`${a.name}, ${a.div}`:a.name):id;
+  }).join("; ");
+
+  const generate = async()=>{
+    setLoading(true);setLetter("");setError("");
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,
+          messages:[{role:"user",content:type.prompt(fields,recipNames)}]})
+      });
+      const d = await res.json();
+      const t = d.content?.map(b=>b.text||"").join("")||"";
+      if(!t) throw new Error();
+      setLetter(t);
+    } catch { setError("Something went wrong. Please try again."); }
+    setLoading(false);
+  };
+
+  const copyLetter = ()=>{ navigator.clipboard.writeText(letter); setCopied(true); setTimeout(()=>setCopied(false),2000); };
+  const reset = ()=>{ setTypeId(null);setFields({});setRecips([]);setLetter("");setError(""); };
+
+  return (
+    <div style={{minHeight:"100vh",background:C.bg,color:C.text,fontFamily:"'Georgia',serif"}}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;1,8..60,300&display=swap');
+        *{box-sizing:border-box}
+        ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#3a2e1e;border-radius:3px}
+        .tc{background:${C.surface};border:1px solid ${C.border};border-radius:2px;padding:16px;cursor:pointer;transition:all .2s;text-align:left;width:100%}
+        .tc:hover,.tc.on{background:${C.hover};border-color:${C.gold}}
+        .tc.on{border-left:3px solid ${C.gold}}
+        .fi,.ft{width:100%;background:${C.surface};border:1px solid ${C.border};border-radius:2px;color:${C.text};font-family:'Source Serif 4',serif;font-size:15px;padding:11px 13px;outline:none;resize:vertical;transition:border-color .2s}
+        .fi:focus,.ft:focus{border-color:${C.gold}}
+        .fi::placeholder,.ft::placeholder{color:${C.faint};font-style:italic}
+        .bg{background:${C.gold};color:${C.bg};border:none;border-radius:2px;padding:12px 26px;font-family:'Playfair Display',serif;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s}
+        .bg:hover:not(:disabled){background:${C.goldHi};transform:translateY(-1px)}
+        .bg:disabled{opacity:.3;cursor:not-allowed}
+        .gh{background:transparent;color:${C.muted};border:1px solid ${C.border};border-radius:2px;padding:9px 18px;font-family:'Source Serif 4',serif;font-size:13px;cursor:pointer;transition:all .2s;letter-spacing:.07em}
+        .gh:hover{border-color:${C.muted};color:${C.text}}
+        .lbl{display:block;font-family:'Source Serif 4',serif;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:${C.muted};margin-bottom:7px}
+        .pd{display:flex;gap:6px;align-items:center;justify-content:center;padding:60px}
+        .pd span{width:8px;height:8px;background:${C.gold};border-radius:50%;animation:pu 1.2s ease-in-out infinite}
+        .pd span:nth-child(2){animation-delay:.2s}.pd span:nth-child(3){animation-delay:.4s}
+        @keyframes pu{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+      `}</style>
+
+      {/* Header */}
+      <div style={{borderBottom:`1px solid ${C.border}`,padding:"22px 36px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+        <div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:900,letterSpacing:"-.01em",lineHeight:1}}>After Incarceration</div>
+          <div style={{fontFamily:"'Source Serif 4',serif",fontSize:11,fontStyle:"italic",color:C.muted,marginTop:4,letterSpacing:".04em"}}>Civic Action Letter Tool — Members Only</div>
+        </div>
+        {(typeId||letter)&&<button className="gh" style={{fontSize:12}} onClick={reset}>← Start over</button>}
+      </div>
+
+      <div style={{padding:"36px",maxWidth:860,margin:"0 auto"}}>
+
+        {/* Type selection */}
+        {!typeId&&(
+          <>
+            <div style={{marginBottom:28}}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,marginBottom:8}}>Say it plainly. We'll say it formally.</div>
+              <div style={{fontFamily:"'Source Serif 4',serif",fontSize:14,color:C.muted,lineHeight:1.7,maxWidth:500}}>
+                Describe your situation in plain language. This tool translates it into a formal letter that institutional authority has to take seriously.
+              </div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:10}}>
+              {TYPES.map(t=>(
+                <button key={t.id} className="tc" onClick={()=>{setTypeId(t.id);setFields({});setRecips([]);}}>
+                  <div style={{fontSize:20,marginBottom:7}}>{t.icon}</div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:C.text,marginBottom:4,lineHeight:1.3}}>{t.label}</div>
+                  <div style={{fontFamily:"'Source Serif 4',serif",fontSize:11,color:C.muted,lineHeight:1.5,fontStyle:"italic"}}>{t.desc}</div>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Form + Recipients */}
+        {typeId&&!letter&&type&&(
+          <div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,marginBottom:24,display:"flex",alignItems:"center",gap:10}}>
+              <span>{type.icon}</span><span>{type.label}</span>
+            </div>
+
+            {type.fields.map(f=>(
+              <div key={f.id} style={{marginBottom:18}}>
+                <label className="lbl">{f.label}</label>
+                {f.type==="text"&&<input className="fi" type="text" placeholder={f.ph} value={fields[f.id]||""} onChange={e=>setF(f.id,e.target.value)}/>}
+                {f.type==="area"&&<textarea className="ft" rows={5} placeholder={f.ph} value={fields[f.id]||""} onChange={e=>setF(f.id,e.target.value)}/>}
+                {f.type==="sel"&&<Sel optKey={f.opts} value={fields[f.id]||""} onChange={v=>setF(f.id,v)}/>}
+                {f.type==="multi"&&<MultiSelect optKey={f.opts} value={fields[f.id]||[]} onChange={v=>setF(f.id,v)}/>}
+              </div>
+            ))}
+
+            <div style={{borderTop:`1px solid ${C.border}`,paddingTop:28,marginTop:8,marginBottom:28}}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,marginBottom:6}}>Where should this letter go?</div>
+              <div style={{fontFamily:"'Source Serif 4',serif",fontSize:13,color:C.muted,marginBottom:18,lineHeight:1.6}}>
+                Select one or more agencies. Sending to multiple agencies increases pressure and creates a paper trail.
+                Agencies with online portals can often open an official case number faster than a letter.
+              </div>
+              <RecipientPicker cats={type.cats} selected={recips} onChange={setRecips}/>
+            </div>
+
+            {error&&<div style={{background:"#2a1010",border:"1px solid #5a2020",borderRadius:2,padding:"12px 16px",marginBottom:16,color:"#e08080",fontFamily:"'Source Serif 4',serif",fontSize:14}}>{error}</div>}
+
+            <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+              <button className="bg" onClick={generate} disabled={!ready}>
+                {loading?"Drafting…":"Generate Letter"}
+              </button>
+              {!ready&&!loading&&(
+                <span style={{fontFamily:"'Source Serif 4',serif",fontSize:12,color:C.faint,fontStyle:"italic"}}>
+                  {recips.length===0&&"Select at least one recipient to continue"}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {loading&&<div className="pd"><span/><span/><span/></div>}
+
+        {/* Letter + send options */}
+        {letter&&!loading&&(
+          <div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:10}}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700}}>Your Letter</div>
+              <div style={{display:"flex",gap:8}}>
+                <button className="bg" onClick={copyLetter} style={{padding:"9px 20px",fontSize:13}}>{copied?"Copied ✓":"Copy Full Letter"}</button>
+                <button className="gh" onClick={()=>{setLetter("");setError("");}}>Edit</button>
+              </div>
+            </div>
+            <div style={{
+              background:C.paper,color:C.paperText,borderRadius:2,padding:"36px 44px",
+              fontFamily:"'Source Serif 4',serif",fontSize:15,lineHeight:1.85,
+              whiteSpace:"pre-wrap",border:"1px solid #d4c9b0",boxShadow:"0 4px 24px rgba(0,0,0,.4)",marginBottom:10
+            }}>{letter}</div>
+            <div style={{fontFamily:"'Source Serif 4',serif",fontSize:12,color:C.faint,fontStyle:"italic",lineHeight:1.6,marginBottom:28}}>
+              Review before sending. Add your name, address, and any supporting documents. Keep a copy for your records.
+            </div>
+
+            <div style={{borderTop:`1px solid ${C.border}`,paddingTop:24}}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,marginBottom:6}}>Send Options</div>
+              <div style={{fontFamily:"'Source Serif 4',serif",fontSize:13,color:C.muted,marginBottom:18,lineHeight:1.6}}>
+                File online where a portal is available — it creates an official case number.
+                "Send by Email" opens your email client with the letter pre-filled.
+                Use "Copy Mailing Address" to send by certified mail.
+              </div>
+              {recips.map(id=>{
+                const a = AGENCIES.find(x=>x.id===id);
+                return a?<AgencyCard key={id} agency={a} letter={letter}/>:null;
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
