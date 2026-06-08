@@ -1,0 +1,25 @@
+{
+  "name": "after-incarceration-video",
+  "version": "1.0.0",
+  "description": "Remotion promo video for the After Incarceration Civic Action Letter Tool",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "dev": "remotion studio",
+    "build": "remotion render LetterPromo out/letter-promo.mp4",
+    "still": "remotion still LetterPromo out/poster.png --frame=120",
+    "upgrade": "remotion upgrade"
+  },
+  "dependencies": {
+    "@fontsource/playfair-display": "^5.2.8",
+    "@fontsource/source-serif-4": "^5.2.9",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "remotion": "4.0.380"
+  },
+  "devDependencies": {
+    "@remotion/cli": "4.0.380",
+    "@types/react": "19.1.0",
+    "typescript": "5.7.3"
+  }
+}
