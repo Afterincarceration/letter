@@ -1,0 +1,66 @@
+# FlockAlert 📷
+
+A privacy tool that **alerts you when you're driving near Flock Safety and other
+ALPR (Automated License Plate Reader) cameras.** It runs entirely in your phone's
+browser — no account, no backend, no tracking of you.
+
+It's an installable **Progressive Web App (PWA)**: open it once, "Add to Home
+Screen," and it behaves like a native app.
+
+## How it works
+
+1. **Open the app** and tap **Start driving mode**. Grant location permission.
+2. The map shows your position plus nearby ALPR cameras.
+3. When you come within your chosen **alert distance** of a camera, you get a
+   **visual banner + beep + vibration** (and an optional spoken warning).
+
+### Where the camera data comes from
+
+- **DeFlock / OpenStreetMap** — a live, crowdsourced map of ALPR cameras,
+  queried from the public [Overpass API](https://overpass-api.de). No API key
+  needed. Data is fetched around your location and refreshed as you travel.
+- **Your own points** — tap **➕ Add camera** to drop a marker on the map (tap a
+  spot, or use your current location). These are stored only in your browser
+  (`localStorage`) and are merged with the crowdsourced data for alerts.
+
+> Coverage varies by area. If your region looks empty, consider contributing
+> sightings back to [deflock.me](https://deflock.me) so everyone benefits.
+
+## Features
+
+- 🗺️ Live dark map (Leaflet + OpenStreetMap/CARTO tiles)
+- 📍 Continuous GPS tracking in "driving mode" (`watchPosition`)
+- ⚠️ Proximity alerts: banner + beep + vibration + optional voice
+- 🎚️ Adjustable alert radius (50 m – 1 km), metric or imperial units
+- ➕ Add / remove your own camera points
+- 🔆 Screen **wake lock** so the display stays on while driving
+- 📴 Installable & works offline (app shell cached; data fetched live)
+- 🔒 Privacy-first: your location never leaves the device
+
+## Running it
+
+It's plain static files — no build step.
+
+```bash
+# from this folder
+python3 -m http.server 8000
+# then open http://localhost:8000 on your phone (same Wi-Fi) or desktop
+```
+
+> **Note:** Geolocation, service workers, and wake lock require a **secure
+> context** (HTTPS) — or `localhost` for testing. Deploy to any static host
+> (GitHub Pages, Vercel, Netlify, Cloudflare Pages) to use it on the road.
+
+## Important & safety
+
+- Camera data is crowdsourced and **may be incomplete or out of date.** Absence
+  of an alert does **not** mean there are no cameras.
+- **Don't interact with the app while driving.** Set it up before you go; let the
+  audio/voice/vibration alerts do the work hands-free.
+- This tool is for **lawful privacy awareness.** It does not help anyone evade
+  law enforcement or break traffic laws.
+
+## Tech
+
+Vanilla JS, Leaflet, the browser Geolocation / Web Audio / Vibration / Wake Lock
+/ Speech Synthesis APIs, and a service worker. No frameworks, no bundler.
