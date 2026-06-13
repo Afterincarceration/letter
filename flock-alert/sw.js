@@ -2,12 +2,13 @@
  * Live camera data (Overpass/OSM) and map tiles are always fetched online
  * and are NOT cached aggressively, so data stays fresh.
  */
-const CACHE = "flockalert-v1";
+const CACHE = "flockalert-v2";
 const SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./routes.js",
   "./manifest.webmanifest",
   "./icon.svg",
 ];

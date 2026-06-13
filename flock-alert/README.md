@@ -26,11 +26,28 @@ Screen," and it behaves like a native app.
 > Coverage varies by area. If your region looks empty, consider contributing
 > sightings back to [deflock.me](https://deflock.me) so everyone benefits.
 
+## Plan a route 🛣️
+
+Tap **🛣️ Plan a route** to check your regular trips *before* you drive them:
+
+1. Enter a **start** (or tap 🎯 to use your current location) and a **destination**.
+2. The app geocodes both, draws the driving route, and lists **every ALPR camera
+   within your detection buffer** of that route — in travel order, with how far
+   into the trip each one sits.
+3. **Save** the route (e.g. "Home → Work") and re-open it anytime to re-scan with
+   fresh crowdsourced data. Tap any camera in the list to jump to it on the map.
+
+Routing uses the public [OSRM](https://project-osrm.org) server, address search
+uses [OpenStreetMap Nominatim](https://nominatim.org), and cameras come from the
+same DeFlock/OSM + your-own-points data as driving mode. Saved routes live only
+in your browser's `localStorage`.
+
 ## Features
 
 - 🗺️ Live dark map (Leaflet + OpenStreetMap/CARTO tiles)
 - 📍 Continuous GPS tracking in "driving mode" (`watchPosition`)
 - ⚠️ Proximity alerts: banner + beep + vibration + optional voice
+- 🛣️ **Route planner** — map a trip and see all cameras you'll cross; save commutes
 - 🎚️ Adjustable alert radius (50 m – 1 km), metric or imperial units
 - ➕ Add / remove your own camera points
 - 🔆 Screen **wake lock** so the display stays on while driving

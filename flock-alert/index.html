@@ -53,8 +53,11 @@
   <div id="controls" class="controls">
     <button id="btn-start" class="btn btn--primary">▶ Start driving mode</button>
     <div class="controls__row">
+      <button id="btn-routes" class="btn btn--ghost" title="Plan a route">🛣️ Plan a route</button>
+      <button id="btn-add" class="btn btn--ghost" title="Add a camera you see">➕ Add</button>
+    </div>
+    <div class="controls__row">
       <button id="btn-locate" class="btn btn--ghost" title="Center on me">🎯 Recenter</button>
-      <button id="btn-add" class="btn btn--ghost" title="Add a camera you see">➕ Add camera</button>
       <button id="btn-settings" class="btn btn--ghost" title="Settings">⚙️ Settings</button>
     </div>
   </div>
@@ -126,8 +129,67 @@
     </div>
   </div>
 
+  <!-- Route planner sheet -->
+  <div id="routes" class="sheet hidden" role="dialog" aria-modal="true" aria-label="Plan a route">
+    <div class="sheet__inner">
+      <div class="sheet__header">
+        <h2>Plan a route</h2>
+        <button id="btn-routes-close" class="btn btn--icon" aria-label="Close">✕</button>
+      </div>
+
+      <label class="field">
+        <span class="field__label">Start</span>
+        <div class="route-input">
+          <input id="route-start" type="text" placeholder="Address or place — or use my location" autocomplete="off" />
+          <button id="btn-route-start-me" class="btn btn--small btn--ghost" title="Use my current location">🎯</button>
+        </div>
+      </label>
+
+      <label class="field">
+        <span class="field__label">Destination</span>
+        <input id="route-end" type="text" placeholder="Address or place" autocomplete="off" />
+      </label>
+
+      <label class="field field--inline">
+        <span class="field__label">Detection buffer (distance from road)</span>
+        <div class="field__rowinput">
+          <input id="route-buffer" type="range" min="25" max="500" step="25" />
+          <output id="route-buffer-out">150 m</output>
+        </div>
+      </label>
+
+      <button id="btn-route-go" class="btn btn--primary">🔍 Find cameras on route</button>
+
+      <div id="route-result" class="route-result hidden">
+        <div class="route-summary">
+          <div class="route-stat-box"><span id="route-distance" class="route-stat">—</span><span class="route-stat-label">distance</span></div>
+          <div class="route-stat-box"><span id="route-duration" class="route-stat">—</span><span class="route-stat-label">drive time</span></div>
+          <div class="route-stat-box"><span id="route-camcount" class="route-stat">—</span><span class="route-stat-label">cameras</span></div>
+        </div>
+        <div class="route-actions">
+          <input id="route-name" type="text" placeholder="Name this route (e.g. Home → Work)" autocomplete="off" />
+          <button id="btn-route-save" class="btn btn--small">💾 Save</button>
+        </div>
+        <div id="route-cam-list" class="route-cam-list"></div>
+      </div>
+
+      <div class="sheet__section">
+        <div class="sheet__section-title">Saved routes</div>
+        <div id="saved-routes" class="saved-routes">None saved yet.</div>
+      </div>
+
+      <p class="disclaimer">
+        Routing by <a href="https://project-osrm.org" target="_blank" rel="noopener">OSRM</a>,
+        address search by <a href="https://nominatim.org" target="_blank" rel="noopener">OpenStreetMap Nominatim</a>.
+        Camera coverage is crowdsourced (DeFlock / OSM) plus your own points and may be incomplete —
+        no cameras shown does not guarantee none exist.
+      </p>
+    </div>
+  </div>
+
   <div id="toast" class="toast hidden"></div>
 
   <script src="app.js"></script>
+  <script src="routes.js"></script>
 </body>
 </html>
