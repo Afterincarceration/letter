@@ -5,6 +5,73 @@
  */
 "use strict";
 
+/* ------------------- Smooth (Apple-Maps-like) wheel zoom ------------------ *
+ * Continuous, momentum-feel zoom for mouse wheel / trackpad. Adapted from
+ * Leaflet.SmoothWheelZoom (MIT, github.com/mutsuyuki/Leaflet.SmoothWheelZoom).
+ * On touch devices, pinch zoom is smoothed separately via zoomSnap: 0 below. */
+L.Map.mergeOptions({ smoothWheelZoom: true, smoothSensitivity: 1 });
+
+L.Map.SmoothWheelZoom = L.Handler.extend({
+  addHooks: function () {
+    L.DomEvent.on(this._map._container, "wheel", this._onWheelScroll, this);
+  },
+  removeHooks: function () {
+    L.DomEvent.off(this._map._container, "wheel", this._onWheelScroll, this);
+  },
+  _onWheelScroll: function (e) {
+    if (!this._isWheeling) this._onWheelStart(e);
+    this._onWheeling(e);
+  },
+  _onWheelStart: function (e) {
+    var map = this._map;
+    this._isWheeling = true;
+    this._wheelMousePosition = map.mouseEventToContainerPoint(e);
+    this._centerPoint = map.getSize()._divideBy(2);
+    this._startLatLng = map.containerPointToLatLng(this._centerPoint);
+    this._wheelStartLatLng = map.containerPointToLatLng(this._wheelMousePosition);
+    this._startZoom = map.getZoom();
+    this._moved = false;
+    map.stop();
+    if (map._panAnim) map._panAnim.stop();
+    this._goalZoom = map.getZoom();
+    this._prevZoom = map.getZoom();
+    this._zoomAnimationId = requestAnimationFrame(this._updateWheelZoom.bind(this));
+  },
+  _onWheeling: function (e) {
+    var map = this._map;
+    this._goalZoom = this._goalZoom - e.deltaY * 0.003 * map.options.smoothSensitivity;
+    if (this._goalZoom < map.getMinZoom() || this._goalZoom > map.getMaxZoom()) {
+      this._goalZoom = map._limitZoom(this._goalZoom);
+    }
+    this._wheelMousePosition = map.mouseEventToContainerPoint(e);
+    clearTimeout(this._timeoutId);
+    this._timeoutId = setTimeout(this._onWheelEnd.bind(this), 200);
+    L.DomEvent.preventDefault(e);
+    L.DomEvent.stopPropagation(e);
+  },
+  _onWheelEnd: function () {
+    this._isWheeling = false;
+    cancelAnimationFrame(this._zoomAnimationId);
+    this._map._moveEnd(true);
+  },
+  _updateWheelZoom: function () {
+    var map = this._map;
+    if (!map.getCenter() || !this._wheelMousePosition) return;
+    var zoom = map.getZoom();
+    zoom = zoom + (this._goalZoom - zoom) * 0.3;
+    zoom = Math.round(zoom * 100) / 100;
+    var delta = this._wheelMousePosition.subtract(this._centerPoint);
+    var center = map.unproject(
+      map.project(this._wheelStartLatLng, zoom).subtract(delta),
+      zoom
+    );
+    map.setView(center, zoom, { animate: false });
+    this._prevZoom = zoom;
+    this._zoomAnimationId = requestAnimationFrame(this._updateWheelZoom.bind(this));
+  },
+});
+L.Map.addInitHook("addHandler", "smoothWheelZoom", L.Map.SmoothWheelZoom);
+
 /* ----------------------------- Config & state ---------------------------- */
 
 const DEFAULTS = {
@@ -37,7 +104,26 @@ const FETCH_RADIUS_M = 6_000;       // Overpass search radius around the user
 
 /* ------------------------------- Map setup ------------------------------- */
 
-const map = L.map("map", { zoomControl: false, attributionControl: true }).setView([39.5, -98.35], 4);
+const map = L.map("map", {
+  zoomControl: false,
+  attributionControl: true,
+  // Apple-Maps-like feel:
+  scrollWheelZoom: false,    // replaced by smoothWheelZoom handler above
+  smoothWheelZoom: true,
+  smoothSensitivity: 1.5,
+  zoomSnap: 0,               // continuous zoom — pinch/scroll never "snaps" to a level
+  zoomDelta: 1,              // +/- buttons & double-tap still step by one, animated
+  wheelPxPerZoomLevel: 120,
+  inertia: true,
+  inertiaDeceleration: 2000, // longer, smoother glide when you flick to pan
+  inertiaMaxSpeed: 2000,
+  easeLinearity: 0.2,
+  zoomAnimation: true,
+  fadeAnimation: true,
+  markerZoomAnimation: true,
+  bounceAtZoomLimits: true,
+  doubleClickZoom: true,
+}).setView([39.5, -98.35], 4);
 
 L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
   maxZoom: 20,
