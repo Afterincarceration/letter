@@ -74,6 +74,13 @@ L.Map.addInitHook("addHandler", "smoothWheelZoom", L.Map.SmoothWheelZoom);
 
 /* ----------------------------- Config & state ---------------------------- */
 
+// Optional providers/keys from config.js (all optional — blank = free shared services).
+const CFG = (typeof window !== "undefined" && window.FLOCKALERT_CONFIG) || {};
+const OVERPASS_ENDPOINTS =
+  CFG.overpassEndpoints && CFG.overpassEndpoints.length
+    ? CFG.overpassEndpoints
+    : ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
+
 const DEFAULTS = {
   distance: 300,      // alert radius in meters
   units: "metric",    // "metric" | "imperial"
@@ -125,11 +132,22 @@ const map = L.map("map", {
   doubleClickZoom: true,
 }).setView([39.5, -98.35], 4);
 
-L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-  maxZoom: 20,
-  attribution:
-    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a> · cameras via <a href="https://deflock.me">DeFlock</a>',
-}).addTo(map);
+if (CFG.maptilerKey) {
+  const style = CFG.maptilerStyle || "streets-v2-dark";
+  L.tileLayer(`https://api.maptiler.com/maps/${style}/{z}/{x}/{y}.png?key=${CFG.maptilerKey}`, {
+    maxZoom: 20,
+    tileSize: 512,
+    zoomOffset: -1,
+    attribution:
+      '&copy; <a href="https://www.maptiler.com/copyright/">MapTiler</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · cameras via <a href="https://deflock.me">DeFlock</a>',
+  }).addTo(map);
+} else {
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    maxZoom: 20,
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a> · cameras via <a href="https://deflock.me">DeFlock</a>',
+  }).addTo(map);
+}
 
 L.control.zoom({ position: "topright" }).addTo(map);
 
@@ -235,12 +253,7 @@ async function fetchOsmCameras(lat, lon) {
     );
     out body;`;
 
-  const endpoints = [
-    "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter",
-  ];
-
-  for (const url of endpoints) {
+  for (const url of OVERPASS_ENDPOINTS) {
     try {
       const res = await fetch(url, {
         method: "POST",

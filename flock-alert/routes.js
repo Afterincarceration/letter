@@ -53,6 +53,18 @@ function persistRoutes() {
 /* ----------------------------- Geo / routing ----------------------------- */
 
 async function geocode(query) {
+  // Geoapify (keyed, scalable) when configured; otherwise free Nominatim.
+  if (CFG.geoapifyKey) {
+    const url =
+      "https://api.geoapify.com/v1/geocode/search?format=json&limit=1&text=" +
+      encodeURIComponent(query) + "&apiKey=" + CFG.geoapifyKey;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Geocoding failed (" + res.status + ")");
+    const data = await res.json();
+    const r = data.results && data.results[0];
+    if (!r) throw new Error(`Couldn't find "${query}"`);
+    return { lat: r.lat, lon: r.lon, label: r.formatted };
+  }
   const url =
     "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=" +
     encodeURIComponent(query);
@@ -64,6 +76,23 @@ async function geocode(query) {
 }
 
 async function getRoute(start, end) {
+  // Geoapify (keyed, scalable) when configured; otherwise free OSRM demo server.
+  if (CFG.geoapifyKey) {
+    const url =
+      `https://api.geoapify.com/v1/routing?waypoints=` +
+      `${start.lat},${start.lon}|${end.lat},${end.lon}` +
+      `&mode=drive&apiKey=${CFG.geoapifyKey}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Routing failed (" + res.status + ")");
+    const data = await res.json();
+    const f = data.features && data.features[0];
+    if (!f) throw new Error("No route found between those points.");
+    const g = f.geometry;
+    const coords = [];
+    const lines = g.type === "MultiLineString" ? g.coordinates : [g.coordinates];
+    for (const line of lines) for (const [lon, lat] of line) coords.push([lat, lon]);
+    return { coords, distance: f.properties.distance, duration: f.properties.time };
+  }
   const url =
     `https://router.project-osrm.org/route/v1/driving/` +
     `${start.lon},${start.lat};${end.lon},${end.lat}` +
@@ -142,13 +171,8 @@ async function fetchRouteCameras(coords, buffer) {
     );
     out body;`;
 
-  const endpoints = [
-    "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter",
-  ];
-
   let candidates = [];
-  for (const url of endpoints) {
+  for (const url of OVERPASS_ENDPOINTS) {
     try {
       const res = await fetch(url, {
         method: "POST",

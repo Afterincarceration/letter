@@ -68,6 +68,26 @@ python3 -m http.server 8000
 > context** (HTTPS) — or `localhost` for testing. Deploy to any static host
 > (GitHub Pages, Vercel, Netlify, Cloudflare Pages) to use it on the road.
 
+## Scaling for wide release (API keys)
+
+Out of the box the app uses **free, shared community services** (CARTO map tiles,
+OpenStreetMap Nominatim geocoding, OSRM routing, public Overpass for cameras).
+That's perfect for testing and sharing with individuals or your organization, but
+those services are rate-limited and not meant for heavy traffic.
+
+For a **public / high-traffic** release, open **`config.js`** and paste in keys —
+no code changes needed, the app switches providers automatically:
+
+| Need | Provider | Where to get a free key |
+|------|----------|-------------------------|
+| Map tiles | [MapTiler](https://cloud.maptiler.com) | Account → API keys → set `maptilerKey` |
+| Geocoding **+** routing | [Geoapify](https://myprojects.geoapify.com) (one key does both) | set `geoapifyKey` |
+| Camera data | Overpass (DeFlock/OSM) | optional: point `overpassEndpoints` at your own instance |
+
+Leave any field blank to keep using the free fallback for that piece. Keys in
+`config.js` are public (client-side) by design — use keys restricted by HTTP
+referrer (both MapTiler and Geoapify support locking a key to your domain).
+
 ## Important & safety
 
 - Camera data is crowdsourced and **may be incomplete or out of date.** Absence
