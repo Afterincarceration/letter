@@ -2,6 +2,7 @@ name: Deploy FlockAlert to GitHub Pages
 
 # Publishes the flock-alert/ PWA to GitHub Pages (HTTPS) so GPS, service
 # workers, and wake lock work on real devices.
+# (Pages source set to "GitHub Actions" in repo settings.)
 #
 # One-time setup: in the repo, go to Settings -> Pages -> Build and
 # deployment -> Source: "GitHub Actions". After that, every push to main
