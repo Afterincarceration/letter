@@ -60,6 +60,9 @@
       <button id="btn-locate" class="btn btn--ghost" title="Center on me">🎯 Recenter</button>
       <button id="btn-settings" class="btn btn--ghost" title="Settings">⚙️ Settings</button>
     </div>
+    <div class="controls__row">
+      <button id="btn-inventory" class="btn btn--ghost" title="List every ALPR camera in the current map view">📋 List cameras in view</button>
+    </div>
   </div>
 
   <!-- Add-camera hint -->
@@ -187,10 +190,32 @@
     </div>
   </div>
 
+  <!-- Camera inventory sheet -->
+  <div id="inventory" class="sheet hidden" role="dialog" aria-modal="true" aria-label="Cameras in view">
+    <div class="sheet__inner">
+      <div class="sheet__header">
+        <h2>Cameras in view</h2>
+        <button id="btn-inventory-close" class="btn btn--icon" aria-label="Close">✕</button>
+      </div>
+      <div id="inv-summary" class="inv-summary">Scanning…</div>
+      <div class="inv-actions">
+        <button id="btn-inv-copy" class="btn btn--small">📋 Copy list</button>
+        <button id="btn-inv-csv" class="btn btn--small btn--ghost">⬇ CSV</button>
+      </div>
+      <div id="inv-list" class="inv-list"></div>
+      <p class="disclaimer">
+        Live from DeFlock / OpenStreetMap for the exact area shown on the map. Pan or zoom
+        the map to a city, then re-open this to count and list its cameras. Tap any row to
+        jump to it; "OSM" opens the source record (with the contributor + history).
+      </p>
+    </div>
+  </div>
+
   <div id="toast" class="toast hidden"></div>
 
   <script src="config.js"></script>
   <script src="app.js"></script>
   <script src="routes.js"></script>
+  <script src="inventory.js"></script>
 </body>
 </html>

@@ -333,6 +333,19 @@ select {
   padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap;
 }
 .saved-routes .sroute__del { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px; }
+
+/* ---------- Camera inventory ---------- */
+.inv-summary { font-size: 15px; padding: 8px 0 4px; }
+.inv-summary strong { font-size: 22px; color: var(--danger); }
+.inv-brands { font-size: 12px; color: var(--muted); }
+.inv-actions { display: flex; gap: 8px; margin: 10px 0; }
+.inv-list { display: flex; flex-direction: column; gap: 6px; max-height: 52vh; overflow-y: auto; }
+.inv-row { display: flex; align-items: center; gap: 10px; background: #0e1426; padding: 9px 12px; border-radius: 10px; font-size: 14px; cursor: pointer; }
+.inv-idx { flex: 0 0 26px; height: 26px; border-radius: 50%; background: var(--danger); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+.inv-main { flex: 1; min-width: 0; }
+.inv-coords { font-variant-numeric: tabular-nums; }
+.inv-meta { font-size: 12px; color: var(--muted); }
+.inv-osm { color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 700; padding: 4px 6px; }
 .me-marker {
   width: 18px; height: 18px;
   background: var(--accent);
