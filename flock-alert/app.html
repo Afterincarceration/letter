@@ -31,7 +31,7 @@
   <div id="alert-banner" class="alert-banner hidden" role="alert" aria-live="assertive">
     <div class="alert-banner__icon">⚠️</div>
     <div class="alert-banner__body">
-      <div class="alert-banner__title">ALPR camera ahead</div>
+      <div id="alert-title" class="alert-banner__title">Camera ahead</div>
       <div id="alert-distance" class="alert-banner__distance">—</div>
     </div>
   </div>
@@ -111,8 +111,18 @@
       </label>
 
       <label class="field field--inline">
-        <span class="field__label">Load DeFlock / OSM cameras</span>
+        <span class="field__label">System notifications</span>
+        <input id="set-notify" type="checkbox" class="switch" />
+      </label>
+
+      <label class="field field--inline">
+        <span class="field__label">Flock / ALPR cameras</span>
         <input id="set-osm" type="checkbox" class="switch" />
+      </label>
+
+      <label class="field field--inline">
+        <span class="field__label">Speed cameras</span>
+        <input id="set-speed" type="checkbox" class="switch" />
       </label>
 
       <div class="sheet__section">

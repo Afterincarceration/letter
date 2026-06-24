@@ -166,34 +166,44 @@ async function fetchCandidates(allCoords, buffer) {
   const padLon = padLat / Math.max(0.2, Math.cos((minLat + maxLat) / 2 * Math.PI / 180));
   const bbox = `${minLat - padLat},${minLon - padLon},${maxLat + padLat},${maxLon + padLon}`;
 
-  const q = `
-    [out:json][timeout:30];
-    (
-      node["man_made"="surveillance"]["surveillance:type"="ALPR"](${bbox});
-      node["man_made"="surveillance"]["camera:type"="alpr"](${bbox});
-    );
-    out body;`;
+  const parts = [];
+  if (state.settings.osm) {
+    parts.push(`node["man_made"="surveillance"]["surveillance:type"="ALPR"](${bbox});`);
+    parts.push(`node["man_made"="surveillance"]["camera:type"="alpr"](${bbox});`);
+  }
+  if (state.settings.speed) {
+    parts.push(`node["highway"="speed_camera"](${bbox});`);
+    parts.push(`node["enforcement"="maxspeed"](${bbox});`);
+  }
 
   let candidates = [];
-  for (const url of OVERPASS_ENDPOINTS) {
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        body: "data=" + encodeURIComponent(q),
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      });
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      const data = await res.json();
-      candidates = (data.elements || [])
-        .filter((e) => e.lat && e.lon)
-        .map((e) => ({
-          id: "osm-" + e.id, lat: e.lat, lon: e.lon, source: "osm",
-          name: e.tags?.brand || e.tags?.operator || "ALPR camera",
-          dir: e.tags?.direction != null ? Number(e.tags.direction) : null,
-        }));
-      break;
-    } catch (err) {
-      console.warn("Overpass (route) failed:", url, err);
+  if (parts.length) {
+    const q = `[out:json][timeout:30];(${parts.join("")});out body;`;
+    for (const url of OVERPASS_ENDPOINTS) {
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          body: "data=" + encodeURIComponent(q),
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        candidates = (data.elements || [])
+          .filter((e) => e.lat && e.lon)
+          .map((e) => {
+            const t = e.tags || {};
+            const isSpeed = t.highway === "speed_camera" || t.enforcement === "maxspeed";
+            return {
+              id: (isSpeed ? "spd-" : "osm-") + e.id, lat: e.lat, lon: e.lon, source: "osm",
+              type: isSpeed ? "speed" : "alpr",
+              name: isSpeed ? "Speed camera" : (t.brand || t.operator || "ALPR camera"),
+              dir: t.direction != null ? Number(t.direction) : null,
+            };
+          });
+        break;
+      } catch (err) {
+        console.warn("Overpass (route) failed:", url, err);
+      }
     }
   }
 
@@ -237,11 +247,10 @@ function drawRoute(coords, cameras) {
   path.forEach((p) => bounds.extend(p));
 
   cameras.forEach((cam, i) => {
-    const manual = cam.source === "manual";
     const m = new google.maps.Marker({
       position: { lat: cam.lat, lng: cam.lon },
       map,
-      icon: camIcon(manual, true),
+      icon: camIcon(cam, true),
       zIndex: 600,
       title: `#${i + 1} · ${cam.name || "ALPR camera"}`,
     });

@@ -15,7 +15,10 @@ const OVERPASS_ENDPOINTS =
     : ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
 
 const DEFAULTS = {
-  distance: 300, units: "metric", sound: true, voice: false, vibrate: true, osm: true,
+  distance: 300, units: "metric", sound: true, voice: false, vibrate: true,
+  osm: true,        // Flock / ALPR cameras
+  speed: true,      // speed cameras
+  notify: false,    // system (Web) notifications
 };
 
 const state = {
@@ -84,6 +87,9 @@ const ui = {
   setVoice: el("set-voice"),
   setVibrate: el("set-vibrate"),
   setOsm: el("set-osm"),
+  setSpeed: el("set-speed"),
+  setNotify: el("set-notify"),
+  alertTitle: el("alert-title"),
   manualList: el("manual-list"),
   btnClearManual: el("btn-clear-manual"),
   toast: el("toast"),
@@ -167,6 +173,9 @@ function initMap() {
     }
   });
 
+  // Load cameras for whatever area is on screen, whenever the map settles.
+  map.addListener("idle", scheduleViewFetch);
+
   renderCameras();
 
   if ("geolocation" in navigator) {
@@ -174,8 +183,7 @@ function initMap() {
       (p) => {
         onPosition(p);
         map.setCenter({ lat: p.coords.latitude, lng: p.coords.longitude });
-        map.setZoom(15);
-        if (state.settings.osm) fetchOsmCameras(p.coords.latitude, p.coords.longitude);
+        map.setZoom(15);   // 'idle' fires after this → cameras load for the view
       },
       (e) => console.info("Initial location unavailable", e),
       { enableHighAccuracy: true, timeout: 8000 }
@@ -190,11 +198,16 @@ function requireMap() {
 
 /* ------------------------------ Icons / SV ------------------------------- */
 
-function camIcon(manual, big) {
+function camColor(cam) {
+  if (cam && cam.source === "manual") return "#ffb020";   // your points — amber
+  if (cam && cam.type === "speed") return "#b07cff";       // speed cameras — purple
+  return "#ff5d5d";                                        // ALPR / Flock — red
+}
+function camIcon(cam, big) {
   return {
     path: google.maps.SymbolPath.CIRCLE,
     scale: big ? 9 : 6,
-    fillColor: manual ? "#ffb020" : "#ff5d5d",
+    fillColor: camColor(cam),
     fillOpacity: 1,
     strokeColor: "#ffffff",
     strokeWeight: 2,
@@ -245,22 +258,49 @@ function openCameraInfo(cam, marker, label) {
 /* --------------------------- Camera data layer --------------------------- */
 
 function allCameras() {
-  const osm = state.settings.osm ? state.osmCameras : [];
+  const osm = state.osmCameras.filter((c) =>
+    c.type === "speed" ? state.settings.speed : state.settings.osm
+  );
   return [...osm, ...state.manualCameras];
 }
 
-async function fetchOsmCameras(lat, lon) {
-  if (!state.settings.osm || state.fetching) return;
+let viewTimer = null;
+let lastViewKey = "";
+
+// Debounced: re-load cameras whenever the map settles (pan/zoom or GPS follow).
+function scheduleViewFetch() {
+  clearTimeout(viewTimer);
+  viewTimer = setTimeout(fetchCamerasInView, 500);
+}
+
+// Load every ALPR + speed camera in the CURRENT MAP VIEW (not just near GPS).
+async function fetchCamerasInView() {
+  if (!map) return;
+  const b = map.getBounds();
+  if (!b) return;
+  const sw = b.getSouthWest(), ne = b.getNorthEast();
+  const spanLat = ne.lat() - sw.lat(), spanLon = ne.lng() - sw.lng();
+
+  if (spanLat > 0.7 || spanLon > 0.7) { setStatus("idle", "Zoom in to load cameras"); return; }
+  if (!state.settings.osm && !state.settings.speed) { state.osmCameras = []; renderCameras(); return; }
+
+  const key = `${sw.lat().toFixed(2)},${sw.lng().toFixed(2)},${ne.lat().toFixed(2)},${ne.lng().toFixed(2)}`;
+  if (key === lastViewKey && state.osmCameras.length) return;   // this view already loaded
+  if (state.fetching) return;
+
   state.fetching = true;
   setStatus("loading", "Loading cameras…");
-
-  const q = `
-    [out:json][timeout:25];
-    (
-      node["man_made"="surveillance"]["surveillance:type"="ALPR"](around:${FETCH_RADIUS_M},${lat},${lon});
-      node["man_made"="surveillance"]["camera:type"="alpr"](around:${FETCH_RADIUS_M},${lat},${lon});
-    );
-    out body;`;
+  const bbox = `${sw.lat()},${sw.lng()},${ne.lat()},${ne.lng()}`;
+  const parts = [];
+  if (state.settings.osm) {
+    parts.push(`node["man_made"="surveillance"]["surveillance:type"="ALPR"](${bbox});`);
+    parts.push(`node["man_made"="surveillance"]["camera:type"="alpr"](${bbox});`);
+  }
+  if (state.settings.speed) {
+    parts.push(`node["highway"="speed_camera"](${bbox});`);
+    parts.push(`node["enforcement"="maxspeed"](${bbox});`);
+  }
+  const q = `[out:json][timeout:25];(${parts.join("")});out body;`;
 
   for (const url of OVERPASS_ENDPOINTS) {
     try {
@@ -273,36 +313,32 @@ async function fetchOsmCameras(lat, lon) {
       const data = await res.json();
       state.osmCameras = (data.elements || [])
         .filter((e) => e.lat && e.lon)
-        .map((e) => ({
-          id: "osm-" + e.id,
-          lat: e.lat,
-          lon: e.lon,
-          source: "osm",
-          name: e.tags?.brand || e.tags?.operator || e.tags?.manufacturer || "ALPR camera",
-          dir: e.tags?.direction != null ? Number(e.tags.direction) : null,
-        }));
-      state.lastFetchCenter = { lat, lon };
+        .map((e) => {
+          const t = e.tags || {};
+          const isSpeed = t.highway === "speed_camera" || t.enforcement === "maxspeed";
+          return {
+            id: (isSpeed ? "spd-" : "osm-") + e.id,
+            lat: e.lat, lon: e.lon, source: "osm",
+            type: isSpeed ? "speed" : "alpr",
+            name: isSpeed ? "Speed camera" : (t.brand || t.operator || t.manufacturer || "ALPR camera"),
+            dir: t.direction != null ? Number(t.direction) : null,
+          };
+        });
+      lastViewKey = key;
       renderCameras();
+      if (state.me) evaluateProximity();
+      const nA = state.osmCameras.filter((c) => c.type !== "speed").length;
+      const nS = state.osmCameras.filter((c) => c.type === "speed").length;
       setStatus(state.driving ? "active" : "idle", driveLabel());
-      toast(`${state.osmCameras.length} cameras loaded nearby`);
+      toast(`${nA} ALPR · ${nS} speed cameras in view`);
       state.fetching = false;
       return;
     } catch (err) {
       console.warn("Overpass fetch failed:", url, err);
     }
   }
-
   state.fetching = false;
   setStatus("error", "Camera data unavailable");
-  toast("Couldn't reach the camera database. Your added cameras still work.");
-}
-
-function maybeRefetch(lat, lon) {
-  if (!state.settings.osm) return;
-  if (!state.lastFetchCenter ||
-      haversine(lat, lon, state.lastFetchCenter.lat, state.lastFetchCenter.lon) > REFETCH_DISTANCE_M) {
-    fetchOsmCameras(lat, lon);
-  }
 }
 
 /* ------------------------------ Rendering -------------------------------- */
@@ -315,11 +351,10 @@ function renderCameras() {
   for (const cam of cams) {
     seen.add(cam.id);
     if (state.markers.has(cam.id)) continue;
-    const manual = cam.source === "manual";
     const marker = new google.maps.Marker({
       position: { lat: cam.lat, lng: cam.lon },
       map,
-      icon: camIcon(manual, false),
+      icon: camIcon(cam, false),
       title: cam.name || "ALPR camera",
     });
     marker.addListener("click", () => openCameraInfo(cam, marker));
@@ -360,7 +395,6 @@ function onPosition(pos) {
   const { latitude, longitude, accuracy, heading, speed } = pos.coords;
   state.me = { lat: latitude, lon: longitude, accuracy, heading, speed };
   updateMeMarker();
-  maybeRefetch(latitude, longitude);
   evaluateProximity();
 }
 
@@ -425,6 +459,8 @@ function evaluateProximity() {
 }
 
 function triggerAlert(cam, dist, count) {
+  const label = cam.type === "speed" ? "Speed camera" : "License-plate camera";
+  ui.alertTitle.textContent = `${label} ahead`;
   ui.alertBanner.classList.remove("hidden");
   ui.alertDistance.textContent = `${formatDistance(dist)} away` + (count > 1 ? ` · ${count} cameras in range` : "");
   const last = state.alerted.get(cam.id) || 0;
@@ -433,10 +469,18 @@ function triggerAlert(cam, dist, count) {
   state.alerted.set(cam.id, now);
   if (state.settings.vibrate && navigator.vibrate) navigator.vibrate([200, 80, 200]);
   if (state.settings.sound) beep();
-  if (state.settings.voice) speak(`Camera ${formatDistance(dist)} ahead`);
+  if (state.settings.voice) speak(`${label} ${formatDistance(dist)} ahead`);
+  if (state.settings.notify) systemNotify(`${label} ahead`, `${formatDistance(dist)} away`);
 }
 
 function hideAlert() { ui.alertBanner.classList.add("hidden"); }
+
+function systemNotify(title, body) {
+  try {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+    new Notification(title, { body, icon: "icon.svg", tag: "flockalert", renotify: true });
+  } catch (e) { console.warn("notify failed", e); }
+}
 
 /* ------------------------------- Alerts ---------------------------------- */
 
@@ -544,6 +588,8 @@ function syncSettingsUI() {
   ui.setVoice.checked = state.settings.voice;
   ui.setVibrate.checked = state.settings.vibrate;
   ui.setOsm.checked = state.settings.osm;
+  ui.setSpeed.checked = state.settings.speed;
+  ui.setNotify.checked = state.settings.notify;
 }
 
 ui.setDistance.addEventListener("input", () => {
@@ -562,9 +608,20 @@ ui.setVoice.addEventListener("change", () => { state.settings.voice = ui.setVoic
 ui.setVibrate.addEventListener("change", () => { state.settings.vibrate = ui.setVibrate.checked; saveSettings(); if (ui.setVibrate.checked && navigator.vibrate) navigator.vibrate(120); });
 ui.setOsm.addEventListener("change", () => {
   state.settings.osm = ui.setOsm.checked; saveSettings();
-  if (state.settings.osm && state.me) fetchOsmCameras(state.me.lat, state.me.lon);
-  renderCameras();
-  if (state.me) evaluateProximity();
+  lastViewKey = ""; fetchCamerasInView();
+});
+ui.setSpeed.addEventListener("change", () => {
+  state.settings.speed = ui.setSpeed.checked; saveSettings();
+  lastViewKey = ""; fetchCamerasInView();
+});
+ui.setNotify.addEventListener("change", () => {
+  state.settings.notify = ui.setNotify.checked; saveSettings();
+  if (ui.setNotify.checked && "Notification" in window && Notification.permission !== "granted") {
+    Notification.requestPermission().then((p) => {
+      if (p !== "granted") { state.settings.notify = false; ui.setNotify.checked = false; saveSettings(); toast("Notifications blocked in browser settings."); }
+      else systemNotify("Notifications on", "You'll get alerts as you approach cameras.");
+    });
+  }
 });
 
 /* ------------------------------- Buttons --------------------------------- */
