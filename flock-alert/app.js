@@ -372,8 +372,11 @@ function startDriving() {
   if (!requireMap()) return;
   if (!("geolocation" in navigator)) { toast("This device has no GPS / geolocation support."); return; }
   state.driving = true;
-  ui.btnStart.textContent = "■ Stop driving mode";
+  ui.btnStart.textContent = "■ Stop";
   ui.btnStart.classList.add("is-active");
+  // Minimize the dashboard so the map dominates while driving.
+  ui.dash.classList.remove("dash--open");
+  ui.dash.classList.add("dash--peek", "dash--driving");
   setStatus("active", driveLabel());
   keepAwake(true);
   state.watchId = navigator.geolocation.watchPosition(onPosition, onPositionError, {
@@ -385,6 +388,7 @@ function stopDriving() {
   state.driving = false;
   ui.btnStart.textContent = "▶ Start driving mode";
   ui.btnStart.classList.remove("is-active");
+  ui.dash.classList.remove("dash--driving");
   setStatus("idle", "Idle");
   hideAlert();
   keepAwake(false);

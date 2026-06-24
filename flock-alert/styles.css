@@ -389,6 +389,13 @@ select {
 .dash-route__name { font-weight: 600; font-size: 14px; }
 .dash-route__badge { background: rgba(231,76,60,0.18); color: var(--danger); padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
 
+/* Driving mode: shrink the dashboard so the map dominates */
+.dash--driving { padding: 2px 12px 8px; gap: 4px; }
+.dash--driving .dash__handle { margin: 4px auto 0; }
+.dash--driving .dash__sub { display: none; }
+.dash--driving .dash__dist { font-size: 15px; }
+.dash--driving .dash__drive { padding: 8px; font-size: 14px; border-radius: 12px; }
+
 /* ---------- Route options (surveillance comparison) ---------- */
 .route-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
 .route-options__title { font-size: 12px; color: var(--muted); }
