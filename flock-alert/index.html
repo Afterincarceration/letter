@@ -2,220 +2,155 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0b1020" />
-  <title>FlockAlert — ALPR Camera Warnings</title>
-  <meta name="description" content="Get alerted when you're driving near Flock Safety and other ALPR (automated license plate reader) cameras." />
-
+  <title>FlockAlert — Know where the ALPR cameras are</title>
+  <meta name="description" content="Map Flock Safety and other ALPR (license-plate-reader) cameras, get alerted while driving, and hold local agencies accountable for mass vehicle surveillance." />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="icon.svg" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="mobile-web-app-capable" content="yes" />
-
-  <!-- Leaflet (OpenStreetMap) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="icon.svg" />
+  <link rel="stylesheet" href="home.css" />
 </head>
 <body>
-  <div id="map"></div>
 
-  <!-- Top status bar -->
-  <header id="statusbar" class="panel">
-    <div class="brand">
-      <span class="logo" aria-hidden="true">📷</span>
-      <span class="brand-text">FlockAlert</span>
+  <nav class="nav">
+    <div class="nav__brand"><span aria-hidden="true">📷</span> FlockAlert</div>
+    <div class="nav__links">
+      <a href="#what">What it is</a>
+      <a href="#dragnet">The dragnet</a>
+      <a href="#newburgh">Newburgh</a>
+      <a class="nav__cta" href="app.html">Open the map →</a>
     </div>
-    <div id="status" class="status status--idle">Idle</div>
+  </nav>
+
+  <!-- Hero -->
+  <header class="hero">
+    <div class="wrap">
+      <h1>Know where the <span class="hl">surveillance cameras</span> are.</h1>
+      <p>
+        Flock Safety and other automated license-plate-reader (ALPR) cameras photograph and
+        log <em>every</em> passing vehicle — not just suspects. FlockAlert maps them, warns you
+        while you drive, and helps your community see who's watching.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn--primary" href="app.html">🗺️ Open the live camera map</a>
+        <a class="btn btn--ghost" href="app.html">📷 Driver alert mode</a>
+      </div>
+    </div>
   </header>
 
-  <!-- Big proximity alert banner -->
-  <div id="alert-banner" class="alert-banner hidden" role="alert" aria-live="assertive">
-    <div class="alert-banner__icon">⚠️</div>
-    <div class="alert-banner__body">
-      <div class="alert-banner__title">ALPR camera ahead</div>
-      <div id="alert-distance" class="alert-banner__distance">—</div>
-    </div>
-  </div>
-
-  <!-- Nearest camera readout -->
-  <div id="nearest" class="nearest panel hidden">
-    <span class="nearest__label">Nearest camera</span>
-    <span id="nearest-distance" class="nearest__distance">—</span>
-    <span id="nearest-count" class="nearest__count"></span>
-  </div>
-
-  <!-- Bottom controls -->
-  <div id="controls" class="controls">
-    <button id="btn-start" class="btn btn--primary">▶ Start driving mode</button>
-    <div class="controls__row">
-      <button id="btn-routes" class="btn btn--ghost" title="Plan a route">🛣️ Plan a route</button>
-      <button id="btn-add" class="btn btn--ghost" title="Add a camera you see">➕ Add</button>
-    </div>
-    <div class="controls__row">
-      <button id="btn-locate" class="btn btn--ghost" title="Center on me">🎯 Recenter</button>
-      <button id="btn-settings" class="btn btn--ghost" title="Settings">⚙️ Settings</button>
-    </div>
-    <div class="controls__row">
-      <button id="btn-inventory" class="btn btn--ghost" title="List every ALPR camera in the current map view">📋 List cameras in view</button>
-    </div>
-  </div>
-
-  <!-- Add-camera hint -->
-  <div id="add-hint" class="add-hint hidden">
-    Tap the map where the camera is, or use your current location.
-    <div class="add-hint__actions">
-      <button id="btn-add-here" class="btn btn--small">Use my location</button>
-      <button id="btn-add-cancel" class="btn btn--small btn--ghost">Cancel</button>
-    </div>
-  </div>
-
-  <!-- Settings sheet -->
-  <div id="settings" class="sheet hidden" role="dialog" aria-modal="true" aria-label="Settings">
-    <div class="sheet__inner">
-      <div class="sheet__header">
-        <h2>Settings</h2>
-        <button id="btn-settings-close" class="btn btn--icon" aria-label="Close">✕</button>
+  <!-- Stats -->
+  <section id="stats">
+    <div class="wrap">
+      <div class="stats">
+        <div class="stat"><div class="num">80+</div><div class="lbl">ALPR cameras in the City of Newburgh</div></div>
+        <div class="stat"><div class="num blue">~170+</div><div class="lbl">mapped across the mid-Hudson region</div></div>
+        <div class="stat"><div class="num green">$274,400</div><div class="lbl">Newburgh paid Flock in 2024 (state grant)</div></div>
+        <div class="stat"><div class="num">4,000+</div><div class="lbl">reported ICE-related Flock lookups nationwide</div></div>
       </div>
+      <p class="disclaimer">Figures from public reporting and crowdsourced mapping (DeFlock / OpenStreetMap); coverage may be incomplete and is being verified via public-records requests.</p>
+    </div>
+  </section>
 
-      <label class="field">
-        <span class="field__label">Alert distance</span>
-        <div class="field__rowinput">
-          <input id="set-distance" type="range" min="50" max="1000" step="25" />
-          <output id="set-distance-out">300 m</output>
+  <!-- What it is -->
+  <section id="what">
+    <div class="wrap">
+      <h2>What FlockAlert does</h2>
+      <p class="lead">Three tools in one — for drivers, for researchers, and for organizers.</p>
+      <div class="grid">
+        <div class="card">
+          <div class="ico">🗺️</div>
+          <h3>Live camera map</h3>
+          <p>See ALPR cameras near you, sourced live from DeFlock / OpenStreetMap. Add cameras you spot.</p>
         </div>
-      </label>
-
-      <label class="field field--inline">
-        <span class="field__label">Units</span>
-        <select id="set-units">
-          <option value="metric">Meters / km</option>
-          <option value="imperial">Feet / miles</option>
-        </select>
-      </label>
-
-      <label class="field field--inline">
-        <span class="field__label">Sound alert</span>
-        <input id="set-sound" type="checkbox" class="switch" />
-      </label>
-
-      <label class="field field--inline">
-        <span class="field__label">Spoken alert (voice)</span>
-        <input id="set-voice" type="checkbox" class="switch" />
-      </label>
-
-      <label class="field field--inline">
-        <span class="field__label">Vibrate</span>
-        <input id="set-vibrate" type="checkbox" class="switch" />
-      </label>
-
-      <label class="field field--inline">
-        <span class="field__label">Load DeFlock / OSM cameras</span>
-        <input id="set-osm" type="checkbox" class="switch" />
-      </label>
-
-      <div class="sheet__section">
-        <div class="sheet__section-title">Your added cameras</div>
-        <div id="manual-list" class="manual-list">None yet.</div>
-        <button id="btn-clear-manual" class="btn btn--small btn--danger">Clear my cameras</button>
+        <div class="card">
+          <div class="ico">📷</div>
+          <h3>Driver alerts</h3>
+          <p>Turn on driving mode and get a banner, beep, and vibration as you approach a camera.</p>
+        </div>
+        <div class="card">
+          <div class="ico">📋</div>
+          <h3>Inventory & export</h3>
+          <p>List every camera in any area with coordinates and source records — copy or export to CSV.</p>
+        </div>
       </div>
+    </div>
+  </section>
 
-      <p class="disclaimer">
-        Camera locations are crowdsourced (DeFlock / OpenStreetMap) and points you add
-        yourself. They may be incomplete or out of date. Keep your eyes on the road —
-        don't interact with this app while driving.
+  <!-- The dragnet -->
+  <section id="dragnet">
+    <div class="wrap prose">
+      <h2>The regional dragnet</h2>
+      <p class="lead">A camera isn't an island — it's a node on a national network.</p>
+      <p>
+        Flock's cameras feed a searchable nationwide system. Independent audits document
+        federal and out-of-state access to local data three ways:
+      </p>
+      <div class="doorways">
+        <div class="doorway"><b>Front door</b><br>Direct 1:1 data-sharing with agencies that cooperate with ICE.</div>
+        <div class="doorway"><b>Back door</b><br>Federal searches that appear in audit logs even without explicit sharing.</div>
+        <div class="doorway"><b>Side door</b><br>Local officers running searches on behalf of federal immigration agents.</div>
+      </div>
+      <p style="margin-top:18px">
+        That's why a single city's privacy promise can be undone by the network around it —
+        and why <strong>which agencies your data is shared with</strong> is the question that matters.
       </p>
     </div>
-  </div>
+  </section>
 
-  <!-- Route planner sheet -->
-  <div id="routes" class="sheet hidden" role="dialog" aria-modal="true" aria-label="Plan a route">
-    <div class="sheet__inner">
-      <div class="sheet__header">
-        <h2>Plan a route</h2>
-        <button id="btn-routes-close" class="btn btn--icon" aria-label="Close">✕</button>
+  <!-- Newburgh case study -->
+  <section id="newburgh">
+    <div class="wrap prose">
+      <h2>Case study: Newburgh, NY</h2>
+      <p class="lead">A "Safe and Welcoming" sanctuary city running 80+ cameras on a federally-reachable network.</p>
+      <ul>
+        <li>The City paid Flock <strong>$274,400 in 2024</strong>, funded by a NYS DCJS grant; cancelling mid-contract reportedly costs ~$400,000.</li>
+        <li>A resolution to end the contract has been raised <strong>three times with no recorded vote</strong>.</li>
+        <li>Residents warn the cameras create an ICE-access pathway that contradicts the city's sanctuary policy.</li>
+      </ul>
+      <div class="callout">
+        The fix isn't "more cameras with promises." It's a recorded vote, public release of the
+        data-sharing settings, and the audit logs that show who has actually searched the cameras.
       </div>
-
-      <label class="field">
-        <span class="field__label">Start</span>
-        <div class="route-input">
-          <input id="route-start" type="text" placeholder="Address or place — or use my location" autocomplete="off" />
-          <button id="btn-route-start-me" class="btn btn--small btn--ghost" title="Use my current location">🎯</button>
-        </div>
-      </label>
-
-      <label class="field">
-        <span class="field__label">Destination</span>
-        <input id="route-end" type="text" placeholder="Address or place" autocomplete="off" />
-      </label>
-
-      <label class="field field--inline">
-        <span class="field__label">Detection buffer (distance from road)</span>
-        <div class="field__rowinput">
-          <input id="route-buffer" type="range" min="25" max="500" step="25" />
-          <output id="route-buffer-out">150 m</output>
-        </div>
-      </label>
-
-      <button id="btn-route-go" class="btn btn--primary">🔍 Find cameras on route</button>
-
-      <div id="route-result" class="route-result hidden">
-        <div class="route-summary">
-          <div class="route-stat-box"><span id="route-distance" class="route-stat">—</span><span class="route-stat-label">distance</span></div>
-          <div class="route-stat-box"><span id="route-duration" class="route-stat">—</span><span class="route-stat-label">drive time</span></div>
-          <div class="route-stat-box"><span id="route-camcount" class="route-stat">—</span><span class="route-stat-label">cameras</span></div>
-        </div>
-        <div class="route-actions">
-          <input id="route-name" type="text" placeholder="Name this route (e.g. Home → Work)" autocomplete="off" />
-          <button id="btn-route-save" class="btn btn--small">💾 Save</button>
-        </div>
-        <div id="route-cam-list" class="route-cam-list"></div>
-      </div>
-
-      <div class="sheet__section">
-        <div class="sheet__section-title">Saved routes</div>
-        <div id="saved-routes" class="saved-routes">None saved yet.</div>
-      </div>
-
-      <p class="disclaimer">
-        Routing by <a href="https://project-osrm.org" target="_blank" rel="noopener">OSRM</a>,
-        address search by <a href="https://nominatim.org" target="_blank" rel="noopener">OpenStreetMap Nominatim</a>.
-        Camera coverage is crowdsourced (DeFlock / OSM) plus your own points and may be incomplete —
-        no cameras shown does not guarantee none exist.
+      <p style="margin-top:18px">
+        Background, sources, a ready-to-send public-records (FOIL) request, and a council
+        comment script are in the
+        <a href="https://github.com/afterincarceration/letter/tree/main/research" target="_blank" rel="noopener">research folder on GitHub</a>.
       </p>
     </div>
-  </div>
+  </section>
 
-  <!-- Camera inventory sheet -->
-  <div id="inventory" class="sheet hidden" role="dialog" aria-modal="true" aria-label="Cameras in view">
-    <div class="sheet__inner">
-      <div class="sheet__header">
-        <h2>Cameras in view</h2>
-        <button id="btn-inventory-close" class="btn btn--icon" aria-label="Close">✕</button>
+  <!-- CTA -->
+  <section>
+    <div class="wrap" style="text-align:center">
+      <h2>Look up your area</h2>
+      <p class="lead">Open the map, zoom to your town, and tap “List cameras in view.”</p>
+      <div class="cta-row">
+        <a class="btn btn--primary" href="app.html">🗺️ Open the live map</a>
       </div>
-      <div id="inv-summary" class="inv-summary">Scanning…</div>
-      <div class="inv-actions">
-        <button id="btn-inv-copy" class="btn btn--small">📋 Copy list</button>
-        <button id="btn-inv-csv" class="btn btn--small btn--ghost">⬇ CSV</button>
-      </div>
-      <div id="inv-list" class="inv-list"></div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p>
+        Camera data: <a href="https://deflock.me" target="_blank" rel="noopener">DeFlock</a> /
+        <a href="https://www.openstreetmap.org" target="_blank" rel="noopener">OpenStreetMap</a> contributors.
+        Built for privacy awareness and government transparency. Not affiliated with Flock Safety.
+      </p>
       <p class="disclaimer">
-        Live from DeFlock / OpenStreetMap for the exact area shown on the map. Pan or zoom
-        the map to a city, then re-open this to count and list its cameras. Tap any row to
-        jump to it; "OSM" opens the source record (with the contributor + history).
+        Camera locations are crowdsourced and may be incomplete or out of date — the absence of a
+        camera here does not guarantee none exists. Don't interact with the app while driving; set
+        it up before you go and let the audio/vibration alerts work hands-free. This tool is for
+        lawful privacy awareness and civic transparency.
       </p>
     </div>
-  </div>
+  </footer>
 
-  <div id="toast" class="toast hidden"></div>
-
-  <script src="config.js"></script>
-  <script src="app.js"></script>
-  <script src="routes.js"></script>
-  <script src="inventory.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    }
+  </script>
 </body>
 </html>

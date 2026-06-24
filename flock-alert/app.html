@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b1020" />
+  <title>FlockAlert — ALPR Camera Warnings</title>
+  <meta name="description" content="Get alerted when you're driving near Flock Safety and other ALPR (automated license plate reader) cameras." />
+
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
+  <!-- Leaflet (OpenStreetMap) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- Top status bar -->
+  <header id="statusbar" class="panel">
+    <a class="brand" href="./" title="Back to home" style="text-decoration:none;color:inherit;">
+      <span class="logo" aria-hidden="true">📷</span>
+      <span class="brand-text">FlockAlert</span>
+    </a>
+    <div id="status" class="status status--idle">Idle</div>
+  </header>
+
+  <!-- Big proximity alert banner -->
+  <div id="alert-banner" class="alert-banner hidden" role="alert" aria-live="assertive">
+    <div class="alert-banner__icon">⚠️</div>
+    <div class="alert-banner__body">
+      <div class="alert-banner__title">ALPR camera ahead</div>
+      <div id="alert-distance" class="alert-banner__distance">—</div>
+    </div>
+  </div>
+
+  <!-- Nearest camera readout -->
+  <div id="nearest" class="nearest panel hidden">
+    <span class="nearest__label">Nearest camera</span>
+    <span id="nearest-distance" class="nearest__distance">—</span>
+    <span id="nearest-count" class="nearest__count"></span>
+  </div>
+
+  <!-- Bottom controls -->
+  <div id="controls" class="controls">
+    <button id="btn-start" class="btn btn--primary">▶ Start driving mode</button>
+    <div class="controls__row">
+      <button id="btn-routes" class="btn btn--ghost" title="Plan a route">🛣️ Plan a route</button>
+      <button id="btn-add" class="btn btn--ghost" title="Add a camera you see">➕ Add</button>
+    </div>
+    <div class="controls__row">
+      <button id="btn-locate" class="btn btn--ghost" title="Center on me">🎯 Recenter</button>
+      <button id="btn-settings" class="btn btn--ghost" title="Settings">⚙️ Settings</button>
+    </div>
+    <div class="controls__row">
+      <button id="btn-inventory" class="btn btn--ghost" title="List every ALPR camera in the current map view">📋 List cameras in view</button>
+    </div>
+  </div>
+
+  <!-- Add-camera hint -->
+  <div id="add-hint" class="add-hint hidden">
+    Tap the map where the camera is, or use your current location.
+    <div class="add-hint__actions">
+      <button id="btn-add-here" class="btn btn--small">Use my location</button>
+      <button id="btn-add-cancel" class="btn btn--small btn--ghost">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Settings sheet -->
+  <div id="settings" class="sheet hidden" role="dialog" aria-modal="true" aria-label="Settings">
+    <div class="sheet__inner">
+      <div class="sheet__header">
+        <h2>Settings</h2>
+        <button id="btn-settings-close" class="btn btn--icon" aria-label="Close">✕</button>
+      </div>
+
+      <label class="field">
+        <span class="field__label">Alert distance</span>
+        <div class="field__rowinput">
+          <input id="set-distance" type="range" min="50" max="1000" step="25" />
+          <output id="set-distance-out">300 m</output>
+        </div>
+      </label>
+
+      <label class="field field--inline">
+        <span class="field__label">Units</span>
+        <select id="set-units">
+          <option value="metric">Meters / km</option>
+          <option value="imperial">Feet / miles</option>
+        </select>
+      </label>
+
+      <label class="field field--inline">
+        <span class="field__label">Sound alert</span>
+        <input id="set-sound" type="checkbox" class="switch" />
+      </label>
+
+      <label class="field field--inline">
+        <span class="field__label">Spoken alert (voice)</span>
+        <input id="set-voice" type="checkbox" class="switch" />
+      </label>
+
+      <label class="field field--inline">
+        <span class="field__label">Vibrate</span>
+        <input id="set-vibrate" type="checkbox" class="switch" />
+      </label>
+
+      <label class="field field--inline">
+        <span class="field__label">Load DeFlock / OSM cameras</span>
+        <input id="set-osm" type="checkbox" class="switch" />
+      </label>
+
+      <div class="sheet__section">
+        <div class="sheet__section-title">Your added cameras</div>
+        <div id="manual-list" class="manual-list">None yet.</div>
+        <button id="btn-clear-manual" class="btn btn--small btn--danger">Clear my cameras</button>
+      </div>
+
+      <p class="disclaimer">
+        Camera locations are crowdsourced (DeFlock / OpenStreetMap) and points you add
+        yourself. They may be incomplete or out of date. Keep your eyes on the road —
+        don't interact with this app while driving.
+      </p>
+    </div>
+  </div>
+
+  <!-- Route planner sheet -->
+  <div id="routes" class="sheet hidden" role="dialog" aria-modal="true" aria-label="Plan a route">
+    <div class="sheet__inner">
+      <div class="sheet__header">
+        <h2>Plan a route</h2>
+        <button id="btn-routes-close" class="btn btn--icon" aria-label="Close">✕</button>
+      </div>
+
+      <label class="field">
+        <span class="field__label">Start</span>
+        <div class="route-input">
+          <input id="route-start" type="text" placeholder="Address or place — or use my location" autocomplete="off" />
+          <button id="btn-route-start-me" class="btn btn--small btn--ghost" title="Use my current location">🎯</button>
+        </div>
+      </label>
+
+      <label class="field">
+        <span class="field__label">Destination</span>
+        <input id="route-end" type="text" placeholder="Address or place" autocomplete="off" />
+      </label>
+
+      <label class="field field--inline">
+        <span class="field__label">Detection buffer (distance from road)</span>
+        <div class="field__rowinput">
+          <input id="route-buffer" type="range" min="25" max="500" step="25" />
+          <output id="route-buffer-out">150 m</output>
+        </div>
+      </label>
+
+      <button id="btn-route-go" class="btn btn--primary">🔍 Find cameras on route</button>
+
+      <div id="route-result" class="route-result hidden">
+        <div class="route-summary">
+          <div class="route-stat-box"><span id="route-distance" class="route-stat">—</span><span class="route-stat-label">distance</span></div>
+          <div class="route-stat-box"><span id="route-duration" class="route-stat">—</span><span class="route-stat-label">drive time</span></div>
+          <div class="route-stat-box"><span id="route-camcount" class="route-stat">—</span><span class="route-stat-label">cameras</span></div>
+        </div>
+        <div class="route-actions">
+          <input id="route-name" type="text" placeholder="Name this route (e.g. Home → Work)" autocomplete="off" />
+          <button id="btn-route-save" class="btn btn--small">💾 Save</button>
+        </div>
+        <div id="route-cam-list" class="route-cam-list"></div>
+      </div>
+
+      <div class="sheet__section">
+        <div class="sheet__section-title">Saved routes</div>
+        <div id="saved-routes" class="saved-routes">None saved yet.</div>
+      </div>
+
+      <p class="disclaimer">
+        Routing by <a href="https://project-osrm.org" target="_blank" rel="noopener">OSRM</a>,
+        address search by <a href="https://nominatim.org" target="_blank" rel="noopener">OpenStreetMap Nominatim</a>.
+        Camera coverage is crowdsourced (DeFlock / OSM) plus your own points and may be incomplete —
+        no cameras shown does not guarantee none exist.
+      </p>
+    </div>
+  </div>
+
+  <!-- Camera inventory sheet -->
+  <div id="inventory" class="sheet hidden" role="dialog" aria-modal="true" aria-label="Cameras in view">
+    <div class="sheet__inner">
+      <div class="sheet__header">
+        <h2>Cameras in view</h2>
+        <button id="btn-inventory-close" class="btn btn--icon" aria-label="Close">✕</button>
+      </div>
+      <div id="inv-summary" class="inv-summary">Scanning…</div>
+      <div class="inv-actions">
+        <button id="btn-inv-copy" class="btn btn--small">📋 Copy list</button>
+        <button id="btn-inv-csv" class="btn btn--small btn--ghost">⬇ CSV</button>
+      </div>
+      <div id="inv-list" class="inv-list"></div>
+      <p class="disclaimer">
+        Live from DeFlock / OpenStreetMap for the exact area shown on the map. Pan or zoom
+        the map to a city, then re-open this to count and list its cameras. Tap any row to
+        jump to it; "OSM" opens the source record (with the contributor + history).
+      </p>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script src="routes.js"></script>
+  <script src="inventory.js"></script>
+</body>
+</html>

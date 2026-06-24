@@ -2,7 +2,7 @@
   "name": "FlockAlert — ALPR Camera Warnings",
   "short_name": "FlockAlert",
   "description": "Get alerted when you're driving near Flock Safety and other ALPR (automated license plate reader) cameras.",
-  "start_url": "./index.html",
+  "start_url": "./app.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
