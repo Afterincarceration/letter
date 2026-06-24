@@ -334,6 +334,15 @@ async function getRoutes(start, end) {
   }));
 }
 
+// 0-100 exposure score for a route: more cameras, and closer to your path,
+// push it higher (saturating). Lower = less surveilled.
+function exposureScore(cameras, buffer) {
+  let weighted = 0;
+  for (const c of cameras) weighted += 1 - 0.6 * Math.min(1, (c.dist || 0) / buffer);
+  return Math.round(100 * (1 - Math.exp(-weighted / 6)));
+}
+function scoreClass(s) { return s <= 20 ? "low" : s <= 50 ? "mid" : "high"; }
+
 async function planRoute(opts = {}) {
   if (routeState.busy) return;
   routeState.busy = true;
@@ -350,16 +359,25 @@ async function planRoute(opts = {}) {
     toast("Scanning routes for cameras…");
     const candidates = await fetchCandidates(routes.flatMap((r) => r.coords), routeState.buffer);
 
-    // Score each route by how many cameras you'd pass.
+    // Score each route: cameras passed, weighted by closeness → 0-100 exposure.
     routes.forEach((r) => {
       r.cameras = camerasOnRoute(r.coords, candidates, routeState.buffer);
       r.camCount = r.cameras.length;
+      r.score = exposureScore(r.cameras, routeState.buffer);
     });
 
-    // Tag fastest + safest; default to fewest cameras (ties broken by time).
+    // Cameras present on EVERY route = unavoidable.
+    let unavoidable = null;
+    routes.forEach((r) => {
+      const ids = new Set(r.cameras.map((c) => c.id));
+      unavoidable = unavoidable === null ? ids : new Set([...unavoidable].filter((x) => ids.has(x)));
+    });
+    routeState.unavoidable = unavoidable || new Set();
+
+    // Tag fastest + safest; default to lowest exposure (ties → faster).
     const fastestIdx = routes.reduce((b, r, i) => (r.duration < routes[b].duration ? i : b), 0);
     const safestIdx = routes.reduce(
-      (b, r, i) => (r.camCount < routes[b].camCount || (r.camCount === routes[b].camCount && r.duration < routes[b].duration) ? i : b), 0);
+      (b, r, i) => (r.score < routes[b].score || (r.score === routes[b].score && r.duration < routes[b].duration) ? i : b), 0);
     routes.forEach((r, i) => { r.fastest = i === fastestIdx; r.safest = i === safestIdx; });
 
     routeState.routes = routes;
@@ -395,15 +413,15 @@ function selectRoute(idx) {
 function renderRouteOptions() {
   const routes = routeState.routes || [];
   if (routes.length <= 1) { rUi.options.innerHTML = ""; return; }
-  rUi.options.innerHTML = `<div class="route-options__title">${routes.length} route options — fewer 📷 is less surveillance</div>`;
+  rUi.options.innerHTML = `<div class="route-options__title">${routes.length} route options — lower exposure score = less surveillance</div>`;
   routes.forEach((r, i) => {
-    const tag = r.safest ? "🛡️ Fewest cameras" : r.fastest ? "⚡ Fastest" : "Alt";
+    const tag = r.safest ? "🛡️ Least surveilled" : r.fastest ? "⚡ Fastest" : "Alt";
     const row = document.createElement("button");
     row.className = "route-opt" + (i === routeState.selected ? " is-sel" : "");
     row.innerHTML =
       `<span class="route-opt__tag">${tag}</span>` +
-      `<span class="route-opt__meta">${formatDuration(r.duration)} · ${formatDistance(r.distance)}</span>` +
-      `<span class="route-opt__cams ${r.camCount === 0 ? "zero" : ""}">${r.camCount} 📷</span>`;
+      `<span class="route-opt__meta">${formatDuration(r.duration)} · ${formatDistance(r.distance)} · ${r.camCount} 📷</span>` +
+      `<span class="route-opt__cams ${scoreClass(r.score)}">${r.score}</span>`;
     row.addEventListener("click", () => selectRoute(i));
     rUi.options.appendChild(row);
   });
@@ -418,13 +436,24 @@ function showRouteResult(r) {
   rUi.result.classList.remove("hidden");
   rUi.distance.textContent = formatDistance(r.distance);
   rUi.duration.textContent = formatDuration(r.duration);
-  rUi.camcount.textContent = r.cameras.length;
+  const score = exposureScore(r.cameras, r.buffer);
+  rUi.camcount.textContent = score;
+  rUi.camcount.className = "route-stat score-" + scoreClass(score);
 
   if (r.cameras.length === 0) {
-    rUi.camList.innerHTML = `<div class="rcam">No mapped ALPR cameras within ${formatDistance(r.buffer)} of this route. (Coverage may be incomplete.)</div>`;
+    rUi.camList.innerHTML = `<div class="rcam">No mapped cameras within ${formatDistance(r.buffer)} of this route. (Coverage may be incomplete.)</div>`;
     return;
   }
   rUi.camList.innerHTML = "";
+  const unav = routeState.unavoidable ? r.cameras.filter((c) => routeState.unavoidable.has(c.id)).length : 0;
+  const worst = r.cameras.slice().sort((a, b) => (a.dist || 0) - (b.dist || 0))[0];
+  const hdr = document.createElement("div");
+  hdr.className = "rcam-hdr";
+  hdr.innerHTML =
+    `${r.cameras.length} camera${r.cameras.length === 1 ? "" : "s"} within ${formatDistance(r.buffer)} of your path` +
+    (unav ? ` · <b>${unav} unavoidable</b> (on every route)` : "") +
+    (worst ? `<br>Closest: ${escapeHtml(worst.name || "camera")} — ${formatDistance(worst.dist || 0)} off your path` : "");
+  rUi.camList.appendChild(hdr);
   r.cameras.forEach((cam, i) => {
     const row = document.createElement("div");
     row.className = "rcam" + (cam.source === "manual" ? " rcam--manual" : "");

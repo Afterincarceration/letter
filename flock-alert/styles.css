@@ -397,7 +397,15 @@ select {
 .route-opt__tag { font-weight: 700; font-size: 14px; flex: 1; }
 .route-opt__meta { font-size: 12px; color: var(--muted); }
 .route-opt__cams { background: rgba(231,76,60,0.18); color: var(--danger); padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 800; white-space: nowrap; }
-.route-opt__cams.zero { background: rgba(110,231,183,0.18); color: var(--accent-2); }
+.route-opt__cams.zero, .route-opt__cams.low { background: rgba(110,231,183,0.18); color: var(--accent-2); }
+.route-opt__cams.mid { background: rgba(255,176,32,0.18); color: var(--warn); }
+.route-opt__cams.high { background: rgba(231,76,60,0.18); color: var(--danger); }
+/* exposure stat color (id beats the :last-child default) */
+#route-camcount.score-low { color: var(--accent-2); }
+#route-camcount.score-mid { color: var(--warn); }
+#route-camcount.score-high { color: var(--danger); }
+.rcam-hdr { font-size: 13px; color: var(--muted); padding: 6px 2px 10px; line-height: 1.5; }
+.rcam-hdr b { color: var(--danger); }
 .me-marker {
   width: 18px; height: 18px;
   background: var(--accent);
