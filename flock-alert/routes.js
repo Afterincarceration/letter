@@ -273,9 +273,43 @@ async function resolveStart() {
   return geocode(v);
 }
 
-// Get up to 3 driving routes (alternatives) between two points.
+// Google Directions via the Maps JS API (browser-safe; the Directions web
+// service blocks CORS). Returns native route objects with alternatives.
+function gmDirections(start, end) {
+  return new Promise((resolve, reject) => {
+    const svc = new google.maps.DirectionsService();
+    svc.route(
+      {
+        origin: { lat: start.lat, lng: start.lon },
+        destination: { lat: end.lat, lng: end.lon },
+        travelMode: google.maps.TravelMode.DRIVING,
+        provideRouteAlternatives: true,
+      },
+      (res, status) => {
+        if (status === "OK" && res.routes && res.routes.length) resolve(res.routes);
+        else reject(new Error("Google Directions: " + status));
+      }
+    );
+  });
+}
+
+// Get up to ~3 driving routes (alternatives). Prefers Google Directions
+// (best alternatives); falls back to OSRM if Google is unavailable/denied.
 async function getRoutes(start, end) {
-  if (CFG.geoapifyKey) return [await getRoute(start, end)]; // Geoapify: single route
+  if (window.google && google.maps && google.maps.DirectionsService) {
+    try {
+      const groutes = await gmDirections(start, end);
+      return groutes.map((r) => {
+        const coords = (r.overview_path || []).map((p) => [p.lat(), p.lng()]);
+        let distance = 0, duration = 0;
+        (r.legs || []).forEach((l) => { distance += l.distance?.value || 0; duration += l.duration?.value || 0; });
+        return { coords, distance, duration };
+      });
+    } catch (e) {
+      console.warn("Google Directions failed; falling back to OSRM.", e);
+    }
+  }
+  if (CFG.geoapifyKey) return [await getRoute(start, end)];
   const url =
     `https://router.project-osrm.org/route/v1/driving/` +
     `${start.lon},${start.lat};${end.lon},${end.lat}` +
