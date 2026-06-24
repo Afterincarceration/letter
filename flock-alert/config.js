@@ -13,7 +13,7 @@ window.FLOCKALERT_CONFIG = {
   // (there's a generous free monthly tier). Restrict the key to your domain
   // (afterincarceration.github.io and/or your *.vercel.app domain) so it can't
   // be abused. Paste it here:
-  googleMapsKey: "",
+  googleMapsKey: "AIzaSyA7EJ-Xln42b1EOeeFmNtX0mNyVnLMv10Y",
 
   // --- Map tiles (legacy / unused with Google Maps) ----------------------
   // Free key at https://cloud.maptiler.com (Account -> API keys).
