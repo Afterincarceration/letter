@@ -64,9 +64,10 @@ const ui = {
   status: el("status"),
   alertBanner: el("alert-banner"),
   alertDistance: el("alert-distance"),
-  nearest: el("nearest"),
-  nearestDistance: el("nearest-distance"),
-  nearestCount: el("nearest-count"),
+  dash: el("dash"),
+  dashHandle: el("dash-handle"),
+  dashDist: el("dash-dist"),
+  dashSub: el("dash-sub"),
   btnStart: el("btn-start"),
   btnLocate: el("btn-locate"),
   btnAdd: el("btn-add"),
@@ -403,7 +404,11 @@ function updateMeMarker(recenter = false) {
 function evaluateProximity() {
   if (!state.me) return;
   const cams = allCameras();
-  if (cams.length === 0) { ui.nearest.classList.add("hidden"); return; }
+  if (cams.length === 0) {
+    ui.dashDist.textContent = "—";
+    ui.dashSub.textContent = "No cameras mapped nearby";
+    return;
+  }
 
   let nearest = null, nearestDist = Infinity, withinAlert = 0;
   for (const cam of cams) {
@@ -412,9 +417,8 @@ function evaluateProximity() {
     if (d <= state.settings.distance) withinAlert++;
   }
 
-  ui.nearest.classList.remove("hidden");
-  ui.nearestDistance.textContent = formatDistance(nearestDist);
-  ui.nearestCount.textContent = `${cams.length} mapped nearby`;
+  ui.dashDist.textContent = formatDistance(nearestDist) + " to nearest";
+  ui.dashSub.textContent = `${withinAlert} in range · ${cams.length} mapped nearby`;
 
   if (nearest && nearestDist <= state.settings.distance) triggerAlert(nearest, nearestDist, withinAlert);
   else hideAlert();
@@ -594,6 +598,16 @@ ui.btnClearManual.addEventListener("click", () => {
     if (state.me) evaluateProximity();
   }
 });
+
+/* ------------------------------- Dashboard ------------------------------- */
+
+function toggleDash(open) {
+  const willOpen = open != null ? open : ui.dash.classList.contains("dash--peek");
+  ui.dash.classList.toggle("dash--peek", !willOpen);
+  ui.dash.classList.toggle("dash--open", willOpen);
+  if (willOpen && typeof renderDashRoutes === "function") renderDashRoutes();
+}
+ui.dashHandle.addEventListener("click", () => toggleDash());
 
 /* ------------------------------- Helpers --------------------------------- */
 

@@ -36,26 +36,29 @@
     </div>
   </div>
 
-  <!-- Nearest camera readout -->
-  <div id="nearest" class="nearest panel hidden">
-    <span class="nearest__label">Nearest camera</span>
-    <span id="nearest-distance" class="nearest__distance">—</span>
-    <span id="nearest-count" class="nearest__count"></span>
-  </div>
+  <!-- Slide-up dashboard -->
+  <div id="dash" class="dash dash--peek">
+    <button class="dash__handle" id="dash-handle" aria-label="Expand dashboard"></button>
 
-  <!-- Bottom controls -->
-  <div id="controls" class="controls">
-    <button id="btn-start" class="btn btn--primary">▶ Start driving mode</button>
-    <div class="controls__row">
-      <button id="btn-routes" class="btn btn--ghost" title="Plan a route">🛣️ Plan a route</button>
-      <button id="btn-add" class="btn btn--ghost" title="Add a camera you see">➕ Add</button>
+    <div class="dash__status">
+      <div class="dash__prox">
+        <div id="dash-dist" class="dash__dist">—</div>
+        <div id="dash-sub" class="dash__sub">Tap “Start driving” for live alerts</div>
+      </div>
+      <button id="btn-locate" class="dash__icon" title="Recenter on me">🎯</button>
     </div>
-    <div class="controls__row">
-      <button id="btn-locate" class="btn btn--ghost" title="Center on me">🎯 Recenter</button>
-      <button id="btn-settings" class="btn btn--ghost" title="Settings">⚙️ Settings</button>
-    </div>
-    <div class="controls__row">
-      <button id="btn-inventory" class="btn btn--ghost" title="List every ALPR camera in the current map view">📋 List cameras in view</button>
+
+    <button id="btn-start" class="btn btn--primary dash__drive">▶ Start driving mode</button>
+
+    <div class="dash__expand">
+      <div class="dash__actions">
+        <button id="btn-routes" class="dash__act" title="Plan a route">🛣️<span>Routes</span></button>
+        <button id="btn-inventory" class="dash__act" title="List cameras in view">📋<span>Cameras</span></button>
+        <button id="btn-add" class="dash__act" title="Add a camera you see">➕<span>Add</span></button>
+        <button id="btn-settings" class="dash__act" title="Settings">⚙️<span>Settings</span></button>
+      </div>
+      <div class="dash__section-title">Saved routes</div>
+      <div id="dash-routes" class="dash__routes">No saved routes yet.</div>
     </div>
   </div>
 
@@ -155,9 +158,10 @@
         </div>
       </label>
 
-      <button id="btn-route-go" class="btn btn--primary">🔍 Find cameras on route</button>
+      <button id="btn-route-go" class="btn btn--primary">🔍 Compare routes by surveillance</button>
 
       <div id="route-result" class="route-result hidden">
+        <div id="route-options" class="route-options"></div>
         <div class="route-summary">
           <div class="route-stat-box"><span id="route-distance" class="route-stat">—</span><span class="route-stat-label">distance</span></div>
           <div class="route-stat-box"><span id="route-duration" class="route-stat">—</span><span class="route-stat-label">drive time</span></div>

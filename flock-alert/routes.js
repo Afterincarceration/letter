@@ -31,6 +31,7 @@ const rUi = {
   bufferOut: el("route-buffer-out"),
   go: el("btn-route-go"),
   result: el("route-result"),
+  options: el("route-options"),
   distance: el("route-distance"),
   duration: el("route-duration"),
   camcount: el("route-camcount"),
@@ -153,9 +154,11 @@ function distToRoute(lat, lon, proj) {
 
 /* --------------------- Cameras along the planned route ------------------- */
 
-async function fetchRouteCameras(coords, buffer) {
+// Fetch all ALPR cameras (OSM + your own points) in the bounding box that
+// covers EVERY candidate route, in a single Overpass call.
+async function fetchCandidates(allCoords, buffer) {
   let minLat = Infinity, minLon = Infinity, maxLat = -Infinity, maxLon = -Infinity;
-  for (const [la, lo] of coords) {
+  for (const [la, lo] of allCoords) {
     if (la < minLat) minLat = la; if (la > maxLat) maxLat = la;
     if (lo < minLon) minLon = lo; if (lo > maxLon) maxLon = lo;
   }
@@ -186,6 +189,7 @@ async function fetchRouteCameras(coords, buffer) {
         .map((e) => ({
           id: "osm-" + e.id, lat: e.lat, lon: e.lon, source: "osm",
           name: e.tags?.brand || e.tags?.operator || "ALPR camera",
+          dir: e.tags?.direction != null ? Number(e.tags.direction) : null,
         }));
       break;
     } catch (err) {
@@ -193,14 +197,17 @@ async function fetchRouteCameras(coords, buffer) {
     }
   }
 
-  // Include the user's own points that fall inside the bbox.
   for (const c of state.manualCameras) {
     if (c.lat >= minLat - padLat && c.lat <= maxLat + padLat &&
         c.lon >= minLon - padLon && c.lon <= maxLon + padLon) {
       candidates.push(c);
     }
   }
+  return candidates;
+}
 
+// Which of the candidate cameras fall within `buffer` of a given route.
+function camerasOnRoute(coords, candidates, buffer) {
   const proj = projectRoute(coords);
   const onRoute = [];
   for (const cam of candidates) {
@@ -266,6 +273,24 @@ async function resolveStart() {
   return geocode(v);
 }
 
+// Get up to 3 driving routes (alternatives) between two points.
+async function getRoutes(start, end) {
+  if (CFG.geoapifyKey) return [await getRoute(start, end)]; // Geoapify: single route
+  const url =
+    `https://router.project-osrm.org/route/v1/driving/` +
+    `${start.lon},${start.lat};${end.lon},${end.lat}` +
+    `?overview=full&geometries=geojson&alternatives=3`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Routing failed (" + res.status + ")");
+  const data = await res.json();
+  if (data.code !== "Ok" || !data.routes?.length) throw new Error("No route found between those points.");
+  return data.routes.map((r) => ({
+    coords: r.geometry.coordinates.map(([lon, lat]) => [lat, lon]),
+    distance: r.distance,
+    duration: r.duration,
+  }));
+}
+
 async function planRoute(opts = {}) {
   if (routeState.busy) return;
   routeState.busy = true;
@@ -276,16 +301,28 @@ async function planRoute(opts = {}) {
     const end = opts.end || (rUi.end.value.trim() ? await geocode(rUi.end.value) : null);
     if (!end) throw new Error("Enter a destination.");
 
-    toast("Calculating route…");
-    const route = await getRoute(start, end);
+    toast("Calculating routes…");
+    const routes = await getRoutes(start, end);
 
-    toast("Scanning route for cameras…");
-    const cameras = await fetchRouteCameras(route.coords, routeState.buffer);
+    toast("Scanning routes for cameras…");
+    const candidates = await fetchCandidates(routes.flatMap((r) => r.coords), routeState.buffer);
 
-    drawRoute(route.coords, cameras);
+    // Score each route by how many cameras you'd pass.
+    routes.forEach((r) => {
+      r.cameras = camerasOnRoute(r.coords, candidates, routeState.buffer);
+      r.camCount = r.cameras.length;
+    });
 
-    routeState.current = { start, end, ...route, buffer: routeState.buffer, cameras };
-    showRouteResult(routeState.current);
+    // Tag fastest + safest; default to fewest cameras (ties broken by time).
+    const fastestIdx = routes.reduce((b, r, i) => (r.duration < routes[b].duration ? i : b), 0);
+    const safestIdx = routes.reduce(
+      (b, r, i) => (r.camCount < routes[b].camCount || (r.camCount === routes[b].camCount && r.duration < routes[b].duration) ? i : b), 0);
+    routes.forEach((r, i) => { r.fastest = i === fastestIdx; r.safest = i === safestIdx; });
+
+    routeState.routes = routes;
+    routeState.start = start;
+    routeState.end = end;
+    selectRoute(safestIdx);                 // show the least-surveilled by default
     if (!opts.start) rUi.name.value = suggestName(start, end);
   } catch (err) {
     console.warn(err);
@@ -293,8 +330,40 @@ async function planRoute(opts = {}) {
   } finally {
     routeState.busy = false;
     rUi.go.disabled = false;
-    rUi.go.textContent = "🔍 Find cameras on route";
+    rUi.go.textContent = "🔍 Compare routes by surveillance";
   }
+}
+
+function selectRoute(idx) {
+  const routes = routeState.routes || [];
+  const r = routes[idx];
+  if (!r) return;
+  routeState.selected = idx;
+  drawRoute(r.coords, r.cameras);
+  routeState.current = {
+    start: routeState.start, end: routeState.end,
+    coords: r.coords, distance: r.distance, duration: r.duration,
+    buffer: routeState.buffer, cameras: r.cameras,
+  };
+  renderRouteOptions();
+  showRouteResult(routeState.current);
+}
+
+function renderRouteOptions() {
+  const routes = routeState.routes || [];
+  if (routes.length <= 1) { rUi.options.innerHTML = ""; return; }
+  rUi.options.innerHTML = `<div class="route-options__title">${routes.length} route options — fewer 📷 is less surveillance</div>`;
+  routes.forEach((r, i) => {
+    const tag = r.safest ? "🛡️ Fewest cameras" : r.fastest ? "⚡ Fastest" : "Alt";
+    const row = document.createElement("button");
+    row.className = "route-opt" + (i === routeState.selected ? " is-sel" : "");
+    row.innerHTML =
+      `<span class="route-opt__tag">${tag}</span>` +
+      `<span class="route-opt__meta">${formatDuration(r.duration)} · ${formatDistance(r.distance)}</span>` +
+      `<span class="route-opt__cams ${r.camCount === 0 ? "zero" : ""}">${r.camCount} 📷</span>`;
+    row.addEventListener("click", () => selectRoute(i));
+    rUi.options.appendChild(row);
+  });
 }
 
 function suggestName(start, end) {
@@ -346,6 +415,7 @@ function saveCurrentRoute() {
   });
   persistRoutes();
   renderSavedRoutes();
+  renderDashRoutes();
   toast(`Saved "${name}"`);
 }
 
@@ -353,6 +423,29 @@ function deleteSavedRoute(id) {
   routeState.saved = routeState.saved.filter((r) => r.id !== id);
   persistRoutes();
   renderSavedRoutes();
+  renderDashRoutes();
+}
+
+// Compact saved-routes list shown in the slide-up dashboard.
+function renderDashRoutes() {
+  const c = el("dash-routes");
+  if (!c) return;
+  if (!routeState.saved.length) { c.textContent = "No saved routes yet."; return; }
+  c.innerHTML = "";
+  routeState.saved.forEach((r) => {
+    const row = document.createElement("button");
+    row.className = "dash-route";
+    row.innerHTML =
+      `<span class="dash-route__name">${escapeHtml(r.name)}</span>` +
+      `<span class="dash-route__badge">${r.camCount} 📷</span>`;
+    row.addEventListener("click", () => {
+      el("dash").classList.remove("dash--open");
+      el("dash").classList.add("dash--peek");
+      rUi.sheet.classList.remove("hidden");
+      openSavedRoute(r);
+    });
+    c.appendChild(row);
+  });
 }
 
 async function openSavedRoute(r) {

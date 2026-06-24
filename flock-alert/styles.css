@@ -364,6 +364,40 @@ select {
 .map-msg h2 { margin: 0; font-size: 20px; }
 .map-msg p { margin: 0; color: var(--muted); max-width: 420px; font-size: 14px; line-height: 1.5; }
 .map-msg code { background: #0e1426; padding: 1px 6px; border-radius: 6px; color: var(--accent-2); }
+
+/* ---------- Slide-up dashboard ---------- */
+.dash {
+  position: absolute; left: 8px; right: 8px; bottom: calc(8px + var(--safe-bottom));
+  z-index: 600; background: var(--panel); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-radius: 20px; box-shadow: var(--shadow); padding: 4px 14px 14px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.dash__handle { width: 44px; height: 5px; border: none; border-radius: 999px; background: rgba(255,255,255,0.28); margin: 8px auto 2px; cursor: pointer; }
+.dash__status { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dash__dist { font-size: 18px; font-weight: 800; }
+.dash__sub { font-size: 12px; color: var(--muted); }
+.dash__icon { background: var(--panel-solid); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; font-size: 18px; padding: 8px 12px; cursor: pointer; color: var(--text); }
+.dash__drive { width: 100%; }
+.dash__expand { max-height: 0; overflow: hidden; transition: max-height 0.28s ease; }
+.dash--open .dash__expand { max-height: 60vh; overflow: auto; }
+.dash__actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding-top: 10px; }
+.dash__act { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--panel-solid); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px 4px; font-size: 20px; color: var(--text); cursor: pointer; }
+.dash__act span { font-size: 11px; color: var(--muted); }
+.dash__section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin: 16px 0 8px; }
+.dash__routes { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--muted); }
+.dash-route { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--panel-solid); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 12px; color: var(--text); cursor: pointer; text-align: left; }
+.dash-route__name { font-weight: 600; font-size: 14px; }
+.dash-route__badge { background: rgba(231,76,60,0.18); color: var(--danger); padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+
+/* ---------- Route options (surveillance comparison) ---------- */
+.route-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.route-options__title { font-size: 12px; color: var(--muted); }
+.route-opt { display: flex; align-items: center; gap: 10px; background: #0e1426; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px; cursor: pointer; color: var(--text); text-align: left; }
+.route-opt.is-sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.route-opt__tag { font-weight: 700; font-size: 14px; flex: 1; }
+.route-opt__meta { font-size: 12px; color: var(--muted); }
+.route-opt__cams { background: rgba(231,76,60,0.18); color: var(--danger); padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 800; white-space: nowrap; }
+.route-opt__cams.zero { background: rgba(110,231,183,0.18); color: var(--accent-2); }
 .me-marker {
   width: 18px; height: 18px;
   background: var(--accent);
