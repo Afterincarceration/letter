@@ -68,7 +68,6 @@ const ui = {
   alertBanner: el("alert-banner"),
   alertDistance: el("alert-distance"),
   dash: el("dash"),
-  dashHandle: el("dash-handle"),
   dashDist: el("dash-dist"),
   dashSub: el("dash-sub"),
   btnStart: el("btn-start"),
@@ -368,15 +367,20 @@ function renderCameras() {
 
 /* ------------------------------ Location --------------------------------- */
 
+function setDriveButton(driving) {
+  ui.btnStart.classList.toggle("is-active", driving);
+  const ico = ui.btnStart.querySelector(".tab__ico");
+  const lbl = ui.btnStart.querySelector(".tab__lbl");
+  if (ico) ico.textContent = driving ? "■" : "▶";
+  if (lbl) lbl.textContent = driving ? "Stop" : "Drive";
+}
+
 function startDriving() {
   if (!requireMap()) return;
   if (!("geolocation" in navigator)) { toast("This device has no GPS / geolocation support."); return; }
   state.driving = true;
-  ui.btnStart.textContent = "■ Stop";
-  ui.btnStart.classList.add("is-active");
-  // Minimize the dashboard so the map dominates while driving.
-  ui.dash.classList.remove("dash--open");
-  ui.dash.classList.add("dash--peek", "dash--driving");
+  setDriveButton(true);
+  ui.dash.classList.add("dash--driving");   // hide the status sub-line for a slimmer bar
   setStatus("active", driveLabel());
   keepAwake(true);
   state.watchId = navigator.geolocation.watchPosition(onPosition, onPositionError, {
@@ -386,8 +390,7 @@ function startDriving() {
 
 function stopDriving() {
   state.driving = false;
-  ui.btnStart.textContent = "▶ Start driving mode";
-  ui.btnStart.classList.remove("is-active");
+  setDriveButton(false);
   ui.dash.classList.remove("dash--driving");
   setStatus("idle", "Idle");
   hideAlert();
@@ -659,16 +662,6 @@ ui.btnClearManual.addEventListener("click", () => {
     if (state.me) evaluateProximity();
   }
 });
-
-/* ------------------------------- Dashboard ------------------------------- */
-
-function toggleDash(open) {
-  const willOpen = open != null ? open : ui.dash.classList.contains("dash--peek");
-  ui.dash.classList.toggle("dash--peek", !willOpen);
-  ui.dash.classList.toggle("dash--open", willOpen);
-  if (willOpen && typeof renderDashRoutes === "function") renderDashRoutes();
-}
-ui.dashHandle.addEventListener("click", () => toggleDash());
 
 /* ------------------------------- Helpers --------------------------------- */
 

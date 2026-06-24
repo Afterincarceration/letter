@@ -36,30 +36,32 @@
     </div>
   </div>
 
-  <!-- Slide-up dashboard -->
-  <div id="dash" class="dash dash--peek">
-    <button class="dash__handle" id="dash-handle" aria-label="Expand dashboard"></button>
+  <!-- Recenter (floating on map) -->
+  <button id="btn-locate" class="map-fab" title="Recenter on me">🎯</button>
 
-    <div class="dash__status">
-      <div class="dash__prox">
-        <div id="dash-dist" class="dash__dist">—</div>
-        <div id="dash-sub" class="dash__sub">Tap “Start driving” for live alerts</div>
-      </div>
-      <button id="btn-locate" class="dash__icon" title="Recenter on me">🎯</button>
+  <!-- Bottom tools: live status strip + persistent tab bar -->
+  <div id="dash" class="tabs">
+    <div class="tabs__status">
+      <span id="dash-dist" class="tabs__dist">—</span>
+      <span id="dash-sub" class="tabs__sub">Tap Drive for live alerts</span>
     </div>
-
-    <button id="btn-start" class="btn btn--primary dash__drive">▶ Start driving mode</button>
-
-    <div class="dash__expand">
-      <div class="dash__actions">
-        <button id="btn-routes" class="dash__act" title="Plan a route">🛣️<span>Routes</span></button>
-        <button id="btn-inventory" class="dash__act" title="List cameras in view">📋<span>Cameras</span></button>
-        <button id="btn-add" class="dash__act" title="Add a camera you see">➕<span>Add</span></button>
-        <button id="btn-settings" class="dash__act" title="Settings">⚙️<span>Settings</span></button>
-      </div>
-      <div class="dash__section-title">Saved routes</div>
-      <div id="dash-routes" class="dash__routes">No saved routes yet.</div>
-    </div>
+    <nav class="tabbar">
+      <button id="btn-start" class="tab tab--drive" title="Start/stop driving mode">
+        <span class="tab__ico">▶</span><span class="tab__lbl">Drive</span>
+      </button>
+      <button id="btn-routes" class="tab" title="Plan a route">
+        <span class="tab__ico">🛣️</span><span class="tab__lbl">Routes</span>
+      </button>
+      <button id="btn-inventory" class="tab" title="List cameras in view">
+        <span class="tab__ico">📋</span><span class="tab__lbl">Cameras</span>
+      </button>
+      <button id="btn-add" class="tab" title="Add a camera you see">
+        <span class="tab__ico">➕</span><span class="tab__lbl">Add</span>
+      </button>
+      <button id="btn-settings" class="tab" title="Settings">
+        <span class="tab__ico">⚙️</span><span class="tab__lbl">Settings</span>
+      </button>
+    </nav>
   </div>
 
   <!-- Add-camera hint -->

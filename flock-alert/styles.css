@@ -365,36 +365,41 @@ select {
 .map-msg p { margin: 0; color: var(--muted); max-width: 420px; font-size: 14px; line-height: 1.5; }
 .map-msg code { background: #0e1426; padding: 1px 6px; border-radius: 6px; color: var(--accent-2); }
 
-/* ---------- Slide-up dashboard ---------- */
-.dash {
-  position: absolute; left: 8px; right: 8px; bottom: calc(8px + var(--safe-bottom));
-  z-index: 600; background: var(--panel); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  border-radius: 20px; box-shadow: var(--shadow); padding: 4px 14px 14px;
-  display: flex; flex-direction: column; gap: 10px;
+/* ---------- Bottom tools: status strip + persistent tab bar ---------- */
+.tabs {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 600;
+  background: var(--panel); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 -6px 24px rgba(0,0,0,0.35);
+  padding-bottom: var(--safe-bottom);
 }
-.dash__handle { width: 44px; height: 5px; border: none; border-radius: 999px; background: rgba(255,255,255,0.28); margin: 8px auto 2px; cursor: pointer; }
-.dash__status { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.dash__dist { font-size: 18px; font-weight: 800; }
-.dash__sub { font-size: 12px; color: var(--muted); }
-.dash__icon { background: var(--panel-solid); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; font-size: 18px; padding: 8px 12px; cursor: pointer; color: var(--text); }
-.dash__drive { width: 100%; }
-.dash__expand { max-height: 0; overflow: hidden; transition: max-height 0.28s ease; }
-.dash--open .dash__expand { max-height: 60vh; overflow: auto; }
-.dash__actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding-top: 10px; }
-.dash__act { display: flex; flex-direction: column; align-items: center; gap: 4px; background: var(--panel-solid); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px 4px; font-size: 20px; color: var(--text); cursor: pointer; }
-.dash__act span { font-size: 11px; color: var(--muted); }
-.dash__section-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin: 16px 0 8px; }
-.dash__routes { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--muted); }
-.dash-route { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--panel-solid); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 12px; color: var(--text); cursor: pointer; text-align: left; }
-.dash-route__name { font-weight: 600; font-size: 14px; }
-.dash-route__badge { background: rgba(231,76,60,0.18); color: var(--danger); padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.tabs__status { display: flex; align-items: baseline; gap: 8px; justify-content: center; padding: 7px 14px 3px; }
+.tabs__dist { font-weight: 800; font-size: 14px; }
+.tabs__sub { color: var(--muted); font-size: 12px; }
+.tabbar { display: grid; grid-template-columns: repeat(5, 1fr); }
+.tab {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: transparent; border: none; color: var(--muted);
+  padding: 6px 2px 10px; cursor: pointer; transition: transform 0.08s ease;
+}
+.tab__ico { font-size: 21px; line-height: 1; }
+.tab__lbl { font-size: 11px; font-weight: 600; }
+.tab:active { transform: scale(0.94); }
+.tab--drive { color: var(--accent-2); }
+.tab--drive.is-active { color: var(--danger); }
 
-/* Driving mode: shrink the dashboard so the map dominates */
-.dash--driving { padding: 2px 12px 8px; gap: 4px; }
-.dash--driving .dash__handle { margin: 4px auto 0; }
-.dash--driving .dash__sub { display: none; }
-.dash--driving .dash__dist { font-size: 15px; }
-.dash--driving .dash__drive { padding: 8px; font-size: 14px; border-radius: 12px; }
+/* Recenter — floating button above the tab bar */
+.map-fab {
+  position: absolute; right: 12px; z-index: 600;
+  bottom: calc(96px + var(--safe-bottom));
+  width: 46px; height: 46px; border-radius: 50%;
+  background: var(--panel); color: var(--text);
+  border: 1px solid rgba(255,255,255,0.12); box-shadow: var(--shadow);
+  font-size: 20px; cursor: pointer;
+}
+
+/* Driving mode: drop the sub-line for an even slimmer bar */
+.dash--driving .tabs__sub { display: none; }
 
 /* ---------- Route options (surveillance comparison) ---------- */
 .route-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
