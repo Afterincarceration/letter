@@ -7,7 +7,15 @@
  * that won't rate-limit or break under load. No code changes needed — just keys.
  */
 window.FLOCKALERT_CONFIG = {
-  // --- Map tiles ---------------------------------------------------------
+  // --- Google Maps (map engine + Street View) -----------------------------
+  // REQUIRED for the map to load. In Google Cloud Console: create an API key,
+  // enable "Maps JavaScript API" + "Street View Static API", and turn on billing
+  // (there's a generous free monthly tier). Restrict the key to your domain
+  // (afterincarceration.github.io and/or your *.vercel.app domain) so it can't
+  // be abused. Paste it here:
+  googleMapsKey: "",
+
+  // --- Map tiles (legacy / unused with Google Maps) ----------------------
   // Free key at https://cloud.maptiler.com (Account -> API keys).
   // Leave blank to use the free CARTO dark basemap.
   maptilerKey: "",

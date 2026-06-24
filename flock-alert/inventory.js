@@ -26,10 +26,12 @@ function invCompass(deg) {
 }
 
 async function runInventory() {
+  if (!map || !map.getBounds()) { invUi.summary.textContent = "Map still loading — try again in a moment."; return; }
   const b = map.getBounds();
+  const sw = b.getSouthWest(), ne = b.getNorthEast();
   const bbox =
-    `${b.getSouth().toFixed(5)},${b.getWest().toFixed(5)},` +
-    `${b.getNorth().toFixed(5)},${b.getEast().toFixed(5)}`;
+    `${sw.lat().toFixed(5)},${sw.lng().toFixed(5)},` +
+    `${ne.lat().toFixed(5)},${ne.lng().toFixed(5)}`;
 
   invUi.summary.textContent = "Scanning the current map area…";
   invUi.list.innerHTML = "";
@@ -111,7 +113,8 @@ function renderInventory() {
       `<a class="inv-osm" href="https://www.openstreetmap.org/node/${c.id}" target="_blank" rel="noopener">OSM</a>`;
     row.addEventListener("click", (e) => {
       if (e.target.tagName === "A") return;
-      map.setView([c.lat, c.lon], 17);
+      map.panTo({ lat: c.lat, lng: c.lon });
+      map.setZoom(17);
       invUi.sheet.classList.add("hidden");
     });
     invUi.list.appendChild(row);

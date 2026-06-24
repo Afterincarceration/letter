@@ -12,8 +12,8 @@
 "use strict";
 
 const routeState = {
-  line: null,            // L.polyline of the route
-  camLayer: null,        // L.layerGroup of route-camera markers
+  line: null,            // google.maps.Polyline of the route
+  markers: [],           // google.maps.Marker[] for route cameras
   current: null,         // { start, end, coords, distance, duration, buffer, cameras }
   buffer: Number(localStorage.getItem("fa_routebuffer")) || 150,
   saved: loadRoutes(),
@@ -214,33 +214,35 @@ async function fetchRouteCameras(coords, buffer) {
 /* ------------------------------- Drawing --------------------------------- */
 
 function clearRouteLayers() {
-  if (routeState.line) { map.removeLayer(routeState.line); routeState.line = null; }
-  if (routeState.camLayer) { map.removeLayer(routeState.camLayer); routeState.camLayer = null; }
+  if (routeState.line) { routeState.line.setMap(null); routeState.line = null; }
+  routeState.markers.forEach((m) => m.setMap(null));
+  routeState.markers = [];
 }
 
 function drawRoute(coords, cameras) {
   clearRouteLayers();
-  routeState.line = L.polyline(coords, { color: "#4f8cff", weight: 5, opacity: 0.85 }).addTo(map);
-
-  routeState.camLayer = L.layerGroup().addTo(map);
-  cameras.forEach((cam, i) => {
-    const manual = cam.source === "manual";
-    const m = L.marker([cam.lat, cam.lon], {
-      icon: L.divIcon({
-        className: "",
-        html: `<div class="cam-marker cam-marker--route ${manual ? "cam-marker--manual" : ""}"></div>`,
-        iconSize: [22, 22], iconAnchor: [11, 11],
-      }),
-      zIndexOffset: 500,
-    });
-    m.bindPopup(
-      `<strong>#${i + 1} · ${escapeHtml(cam.name || "ALPR camera")}</strong><br>` +
-      `<small>${manual ? "Added by you" : "DeFlock / OSM"} · ${formatDistance(cam.along)} into trip</small>`
-    );
-    routeState.camLayer.addLayer(m);
+  const path = coords.map(([lat, lon]) => ({ lat, lng: lon }));
+  routeState.line = new google.maps.Polyline({
+    path, map, strokeColor: "#4f8cff", strokeOpacity: 0.9, strokeWeight: 5,
   });
 
-  map.fitBounds(routeState.line.getBounds(), { padding: [50, 50] });
+  const bounds = new google.maps.LatLngBounds();
+  path.forEach((p) => bounds.extend(p));
+
+  cameras.forEach((cam, i) => {
+    const manual = cam.source === "manual";
+    const m = new google.maps.Marker({
+      position: { lat: cam.lat, lng: cam.lon },
+      map,
+      icon: camIcon(manual, true),
+      zIndex: 600,
+      title: `#${i + 1} · ${cam.name || "ALPR camera"}`,
+    });
+    m.addListener("click", () => openCameraInfo(cam, m, i + 1));
+    routeState.markers.push(m);
+  });
+
+  map.fitBounds(bounds, 60);
 }
 
 /* --------------------------------- Plan ---------------------------------- */
@@ -319,7 +321,8 @@ function showRouteResult(r) {
       `<span class="rcam__name">${escapeHtml(cam.name || "ALPR camera")}</span>` +
       `<span class="rcam__along">${formatDistance(cam.along)} in</span>`;
     row.addEventListener("click", () => {
-      map.setView([cam.lat, cam.lon], 17);
+      map.panTo({ lat: cam.lat, lng: cam.lon });
+      map.setZoom(17);
       rUi.sheet.classList.add("hidden");
     });
     rUi.camList.appendChild(row);
