@@ -139,7 +139,7 @@ function loadGoogleMaps() {
     s.src =
       "https://maps.googleapis.com/maps/api/js?key=" +
       encodeURIComponent(CFG.googleMapsKey) +
-      "&loading=async&libraries=geometry&callback=__faGmapsCb";
+      "&loading=async&libraries=geometry,places&callback=__faGmapsCb";
     document.head.appendChild(s);
   });
 }
@@ -174,6 +174,9 @@ function initMap() {
 
   // Load cameras for whatever area is on screen, whenever the map settles.
   map.addListener("idle", scheduleViewFetch);
+
+  // Attach place autocomplete to the route inputs (defined in routes.js).
+  if (typeof initRouteAutocomplete === "function") initRouteAutocomplete();
 
   renderCameras();
 

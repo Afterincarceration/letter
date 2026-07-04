@@ -425,6 +425,23 @@ select {
 .route-open__btns { display: flex; gap: 8px; flex-wrap: wrap; }
 .route-open__btns .btn { text-decoration: none; }
 .route-open__note { display: block; font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.4; }
+
+/* ---------- Google Places autocomplete dropdown ---------- */
+.pac-container {
+  z-index: 3000;               /* above the route sheet */
+  background: #0e1426;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  font-family: inherit;
+  margin-top: 4px;
+}
+.pac-container:after { display: none; }   /* hide default "powered by google" bg image row spacing quirk */
+.pac-item { color: var(--muted); border-top: 1px solid rgba(255,255,255,0.06); padding: 8px 10px; cursor: pointer; }
+.pac-item:hover, .pac-item-selected { background: #172038; }
+.pac-item-query { color: var(--text); font-size: 14px; }
+.pac-matched { color: var(--accent-2); }
+.pac-icon { display: none; }
 .me-marker {
   width: 18px; height: 18px;
   background: var(--accent);

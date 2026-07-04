@@ -277,12 +277,40 @@ function isMyLocationInput(v) {
   return !v || !v.trim() || /my location|current location/i.test(v);
 }
 
+/* --------------------- Place autocomplete (Google Places) ---------------- */
+
+let acStart = null, acEnd = null;
+let startPlace = null, endPlace = null;   // coords chosen from the dropdown
+
+function placeToPoint(p) {
+  if (!p || !p.geometry || !p.geometry.location) return null;
+  return {
+    lat: p.geometry.location.lat(),
+    lon: p.geometry.location.lng(),
+    label: p.formatted_address || p.name || "",
+  };
+}
+
+function initRouteAutocomplete() {
+  if (acStart) return;                                   // once
+  if (!(window.google && google.maps && google.maps.places) || !rUi.start) return;
+  const opts = { fields: ["geometry", "formatted_address", "name"] };
+  acStart = new google.maps.places.Autocomplete(rUi.start, opts);
+  acEnd = new google.maps.places.Autocomplete(rUi.end, opts);
+  acStart.addListener("place_changed", () => { startPlace = placeToPoint(acStart.getPlace()); });
+  acEnd.addListener("place_changed", () => { endPlace = placeToPoint(acEnd.getPlace()); });
+  rUi.start.addEventListener("input", () => { startPlace = null; });
+  rUi.end.addEventListener("input", () => { endPlace = null; });
+  if (map) { acStart.bindTo("bounds", map); acEnd.bindTo("bounds", map); }  // bias to current area
+}
+
 async function resolveStart() {
   const v = rUi.start.value;
   if (isMyLocationInput(v)) {
     if (state.me) return { lat: state.me.lat, lon: state.me.lon, label: "My location" };
     throw new Error("Enable location (tap 🎯) or type a start address.");
   }
+  if (startPlace) return startPlace;                     // picked from dropdown → exact coords
   return geocode(v);
 }
 
@@ -354,7 +382,7 @@ async function planRoute(opts = {}) {
   rUi.go.textContent = "Finding…";
   try {
     const start = opts.start || (await resolveStart());
-    const end = opts.end || (rUi.end.value.trim() ? await geocode(rUi.end.value) : null);
+    const end = opts.end || endPlace || (rUi.end.value.trim() ? await geocode(rUi.end.value) : null);
     if (!end) throw new Error("Enter a destination.");
 
     toast("Calculating routes…");
