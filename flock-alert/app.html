@@ -183,6 +183,15 @@
           <input id="route-name" type="text" placeholder="Name this route (e.g. Home → Work)" autocomplete="off" />
           <button id="btn-route-save" class="btn btn--small">💾 Save</button>
         </div>
+        <div class="route-open">
+          <span class="route-open__label">Navigate this route in:</span>
+          <div class="route-open__btns">
+            <a id="open-gmaps" class="btn btn--small" target="_blank" rel="noopener">🗺️ Google Maps</a>
+            <a id="open-waze" class="btn btn--small btn--ghost" target="_blank" rel="noopener">🚗 Waze</a>
+            <a id="open-apple" class="btn btn--small btn--ghost" target="_blank" rel="noopener">🧭 Apple Maps</a>
+          </div>
+          <span class="route-open__note"></span>
+        </div>
         <div id="route-cam-list" class="route-cam-list"></div>
       </div>
 

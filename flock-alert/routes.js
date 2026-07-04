@@ -39,6 +39,10 @@ const rUi = {
   save: el("btn-route-save"),
   camList: el("route-cam-list"),
   savedList: el("saved-routes"),
+  openGmaps: el("open-gmaps"),
+  openWaze: el("open-waze"),
+  openApple: el("open-apple"),
+  openNote: el("route-open__note") || document.querySelector(".route-open__note"),
 };
 
 /* ------------------------------ Persistence ------------------------------ */
@@ -408,6 +412,40 @@ function selectRoute(idx) {
   };
   renderRouteOptions();
   showRouteResult(routeState.current);
+  setNavLinks(r);
+}
+
+// Pick n points evenly along the route (excluding endpoints) as waypoints.
+function sampleWaypoints(coords, n) {
+  if (!coords || coords.length <= 2 || n <= 0) return [];
+  const pts = [];
+  for (let k = 1; k <= n; k++) {
+    const idx = Math.round((k / (n + 1)) * (coords.length - 1));
+    pts.push(coords[idx]);
+  }
+  return pts;
+}
+
+// Build "open in nav app" deep links for the selected route.
+function setNavLinks(route) {
+  const s = routeState.start, e = routeState.end;
+  if (!s || !e || !rUi.openGmaps) return;
+  const orig = `${s.lat},${s.lon}`;
+  const dest = `${e.lat},${e.lon}`;
+  const wps = sampleWaypoints(route.coords, 8)
+    .map(([la, lo]) => `${la.toFixed(5)},${lo.toFixed(5)}`)
+    .join("|");
+  // Google Maps: waypoints force it onto THIS low-surveillance route.
+  rUi.openGmaps.href =
+    `https://www.google.com/maps/dir/?api=1&origin=${orig}&destination=${dest}&travelmode=driving` +
+    (wps ? `&waypoints=${encodeURIComponent(wps)}` : "");
+  // Waze + Apple: destination only (they choose their own road).
+  rUi.openWaze.href = `https://waze.com/ul?ll=${dest}&navigate=yes`;
+  rUi.openApple.href = `https://maps.apple.com/?daddr=${dest}&dirflg=d`;
+  if (rUi.openNote) {
+    rUi.openNote.textContent =
+      "Google Maps follows this exact route (via waypoints). Waze & Apple navigate to the destination on their own roads.";
+  }
 }
 
 function renderRouteOptions() {
